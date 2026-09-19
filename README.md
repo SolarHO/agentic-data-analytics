@@ -86,17 +86,17 @@ PostgreSQL / pgvector
 
 ### Data & Backend Foundation
 
-- [o] Python 가상환경 구성
-- [o] FastAPI 프로젝트 구조 구성
-- [o] Docker 기반 PostgreSQL 16 환경 구축
-- [o] FastAPI ↔ PostgreSQL 연결
-- [o] Olist 데이터 프로파일링
-- [o] Primary Key / Foreign Key 후보 검증
-- [o] PostgreSQL Schema 설계
-- [o] Olist 데이터 PostgreSQL 적재
-- [o] 데이터 적재 Row Count 검증
-- [o] Gold Query 작성
-- [o] pytest 기반 Gold Query 자동 검증
+- [x] Python 가상환경 구성
+- [x] FastAPI 프로젝트 구조 구성
+- [x] Docker 기반 PostgreSQL 16 환경 구축
+- [x] FastAPI ↔ PostgreSQL 연결
+- [x] Olist 데이터 프로파일링
+- [x] Primary Key / Foreign Key 후보 검증
+- [x] PostgreSQL Schema 설계
+- [x] Olist 데이터 PostgreSQL 적재
+- [x] 데이터 적재 Row Count 검증
+- [x] Gold Query 작성
+- [x] pytest 기반 Gold Query 자동 검증
 
 ### Agentic Analytics
 
