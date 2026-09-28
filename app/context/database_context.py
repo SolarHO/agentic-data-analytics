@@ -106,6 +106,10 @@ Business metric definitions:
 - Evaluate delivered orders with a non-null order_delivered_customer_date.
 - An order is delayed when:
   order_delivered_customer_date > order_estimated_delivery_date.
+- Delivery delay rate is expressed as a percentage, not a decimal ratio.
+- Calculate it as:
+  delayed_orders / delivered_orders_with_delivery_date * 100.
+- Round the percentage to 2 decimal places.
 
 6. Review Score
 - review_score ranges from 1 to 5.
