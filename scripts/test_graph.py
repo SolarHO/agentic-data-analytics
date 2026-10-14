@@ -21,6 +21,10 @@ def main():
     print("\n=== Execution Result ===")
     print(result["result"])
 
+    print("\n=== Output Contract Validation ===")
+    print("contract_valid:", result.get("contract_valid"))
+    print("contract_error:", result.get("contract_error"))
+
     print("\n=== Execution Error ===")
     print(result["execution_error"])
 

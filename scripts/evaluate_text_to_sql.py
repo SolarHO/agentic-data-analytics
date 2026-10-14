@@ -31,20 +31,31 @@ def main():
             validation_error = result.get("validation_error")
             execution_error = result.get("execution_error")
             actual = result.get("result", [])
+            contract_valid = result.get("contract_valid", False)
+            contract_error = result.get("contract_error")
 
             print("\nGenerated SQL:")
             print(sql)
 
+            # 1. SQL Validation: 읽기 전용 SQL 정책 위반 여부 검사
             if not sql_valid:
                 print("\nResult: FAIL")
                 print(f"Validation error: {validation_error}")
                 continue
 
+            # 2. SQL Execution: PostgreSQL 쿼리 실행 오류 검사
             if execution_error:
                 print("\nResult: FAIL")
                 print(f"Execution error: {execution_error}")
                 continue
 
+            # 3. Output Contract: Metric Plan에서 요구한 컬럼 존재 여부 검사
+            if not contract_valid:
+                print("\nResult: FAIL")
+                print(f"Output contract error: {contract_error}")
+                continue
+
+            # 4. Gold Result: 실제 SQL 실행 결과와 기준값 비교
             success, errors = compare_result(
                 actual=actual,
                 expected=expected,

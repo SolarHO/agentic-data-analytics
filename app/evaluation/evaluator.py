@@ -21,14 +21,13 @@ def normalize_value(value: Any) -> Any:
     return value
 
 
+
 def compare_result(
     actual: list[dict[str, Any]],
-    expected: dict[str, dict[str, Any]],
+    expected: dict[str, Any],
 ) -> tuple[bool, list[str]]:
     """
-    Compare a single-row SQL result with the expected Gold result.
-
-    A metric may define multiple acceptable SQL column aliases.
+    Compare single-row SQL results using canonical metric names.
     """
     errors: list[str] = []
 
@@ -42,27 +41,27 @@ def compare_result(
 
     actual_row = actual[0]
 
-    for metric_name, metric in expected.items():
-        expected_value = metric["value"]
-        aliases = metric["aliases"]
+    expected_columns = set(expected.keys())
+    actual_columns = set(actual_row.keys())
 
-        matched_alias = next(
-            (
-                alias
-                for alias in aliases
-                if alias in actual_row
-            ),
-            None,
+    missing_columns = expected_columns - actual_columns
+    unexpected_columns = actual_columns - expected_columns
+
+    if missing_columns:
+        errors.append(
+            f"Missing columns: {sorted(missing_columns)}"
         )
 
-        if matched_alias is None:
-            errors.append(
-                f"Missing metric '{metric_name}'. "
-                f"Accepted aliases: {aliases}"
-            )
+    if unexpected_columns:
+        errors.append(
+            f"Unexpected columns: {sorted(unexpected_columns)}"
+        )
+
+    for metric_name, expected_value in expected.items():
+        if metric_name not in actual_row:
             continue
 
-        actual_value = actual_row[matched_alias]
+        actual_value = actual_row[metric_name]
 
         normalized_actual = normalize_value(actual_value)
         normalized_expected = normalize_value(expected_value)
@@ -70,8 +69,7 @@ def compare_result(
         if normalized_actual != normalized_expected:
             errors.append(
                 f"{metric_name}: expected {expected_value}, "
-                f"got {actual_value} "
-                f"(column: {matched_alias})"
+                f"got {actual_value}"
             )
 
     return len(errors) == 0, errors
