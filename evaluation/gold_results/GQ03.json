@@ -1,0 +1,117 @@
+[
+  {
+    "month": "2016-09-01",
+    "delivered_orders": 1,
+    "product_revenue": "134.97"
+  },
+  {
+    "month": "2016-10-01",
+    "delivered_orders": 265,
+    "product_revenue": "40325.11"
+  },
+  {
+    "month": "2016-12-01",
+    "delivered_orders": 1,
+    "product_revenue": "10.90"
+  },
+  {
+    "month": "2017-01-01",
+    "delivered_orders": 750,
+    "product_revenue": "111798.36"
+  },
+  {
+    "month": "2017-02-01",
+    "delivered_orders": 1653,
+    "product_revenue": "234223.40"
+  },
+  {
+    "month": "2017-03-01",
+    "delivered_orders": 2546,
+    "product_revenue": "359198.85"
+  },
+  {
+    "month": "2017-04-01",
+    "delivered_orders": 2303,
+    "product_revenue": "340669.68"
+  },
+  {
+    "month": "2017-05-01",
+    "delivered_orders": 3546,
+    "product_revenue": "489338.25"
+  },
+  {
+    "month": "2017-06-01",
+    "delivered_orders": 3135,
+    "product_revenue": "421923.37"
+  },
+  {
+    "month": "2017-07-01",
+    "delivered_orders": 3872,
+    "product_revenue": "481604.52"
+  },
+  {
+    "month": "2017-08-01",
+    "delivered_orders": 4193,
+    "product_revenue": "554699.70"
+  },
+  {
+    "month": "2017-09-01",
+    "delivered_orders": 4150,
+    "product_revenue": "607399.67"
+  },
+  {
+    "month": "2017-10-01",
+    "delivered_orders": 4478,
+    "product_revenue": "648247.65"
+  },
+  {
+    "month": "2017-11-01",
+    "delivered_orders": 7289,
+    "product_revenue": "987765.37"
+  },
+  {
+    "month": "2017-12-01",
+    "delivered_orders": 5513,
+    "product_revenue": "726033.19"
+  },
+  {
+    "month": "2018-01-01",
+    "delivered_orders": 7069,
+    "product_revenue": "924645.00"
+  },
+  {
+    "month": "2018-02-01",
+    "delivered_orders": 6555,
+    "product_revenue": "826437.13"
+  },
+  {
+    "month": "2018-03-01",
+    "delivered_orders": 7003,
+    "product_revenue": "953356.25"
+  },
+  {
+    "month": "2018-04-01",
+    "delivered_orders": 6798,
+    "product_revenue": "973534.09"
+  },
+  {
+    "month": "2018-05-01",
+    "delivered_orders": 6749,
+    "product_revenue": "977544.69"
+  },
+  {
+    "month": "2018-06-01",
+    "delivered_orders": 6099,
+    "product_revenue": "856077.86"
+  },
+  {
+    "month": "2018-07-01",
+    "delivered_orders": 6159,
+    "product_revenue": "867953.46"
+  },
+  {
+    "month": "2018-08-01",
+    "delivered_orders": 6351,
+    "product_revenue": "838576.64"
+  }
+]

@@ -1,17 +1,14 @@
--- ============================================================
 -- AI Data Analytics Platform
 -- Olist Gold Queries
--- ============================================================
 
 
--- ============================================================
 -- GQ01. Delivered Sales Summary
 -- Definition:
 --   product_revenue = SUM(order_items.price)
 --   freight_revenue = SUM(order_items.freight_value)
 --   gross_item_value = product_revenue + freight_revenue
 --   Only delivered orders are included.
--- ============================================================
+
 
 SELECT
     COUNT(DISTINCT o.order_id) AS delivered_orders,
@@ -25,12 +22,11 @@ JOIN order_items oi
 WHERE o.order_status = 'delivered';
 
 
--- ============================================================
 -- GQ02. Average Order Value (AOV)
 -- Definition:
 --   Sum product price by order first,
 --   then calculate the average across delivered orders.
--- ============================================================
+
 
 WITH order_sales AS (
     SELECT
@@ -47,9 +43,8 @@ SELECT
 FROM order_sales;
 
 
--- ============================================================
 -- GQ03. Monthly Product Revenue
--- ============================================================
+
 
 SELECT
     DATE_TRUNC(
@@ -57,7 +52,7 @@ SELECT
         o.order_purchase_timestamp
     )::date AS month,
 
-    COUNT(DISTINCT o.order_id) AS orders,
+    COUNT(DISTINCT o.order_id) AS delivered_orders,
 
     ROUND(
         SUM(oi.price),
@@ -74,11 +69,10 @@ GROUP BY 1
 ORDER BY 1;
 
 
--- ============================================================
 -- GQ04. Product Revenue by Category
 -- LEFT JOIN is intentional because the translation table
 -- does not contain every product category.
--- ============================================================
+
 
 SELECT
     COALESCE(
@@ -87,7 +81,7 @@ SELECT
         'unknown'
     ) AS category,
 
-    COUNT(DISTINCT o.order_id) AS orders,
+    COUNT(DISTINCT o.order_id) AS delivered_orders,
 
     COUNT(oi.order_item_id) AS sold_items,
 

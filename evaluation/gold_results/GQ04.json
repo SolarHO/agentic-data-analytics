@@ -1,0 +1,446 @@
+[
+  {
+    "category": "health_beauty",
+    "delivered_orders": 8647,
+    "sold_items": 9465,
+    "product_revenue": "1233131.72"
+  },
+  {
+    "category": "watches_gifts",
+    "delivered_orders": 5495,
+    "sold_items": 5859,
+    "product_revenue": "1166176.98"
+  },
+  {
+    "category": "bed_bath_table",
+    "delivered_orders": 9272,
+    "sold_items": 10953,
+    "product_revenue": "1023434.76"
+  },
+  {
+    "category": "sports_leisure",
+    "delivered_orders": 7530,
+    "sold_items": 8431,
+    "product_revenue": "954852.55"
+  },
+  {
+    "category": "computers_accessories",
+    "delivered_orders": 6530,
+    "sold_items": 7644,
+    "product_revenue": "888724.61"
+  },
+  {
+    "category": "furniture_decor",
+    "delivered_orders": 6307,
+    "sold_items": 8160,
+    "product_revenue": "711927.69"
+  },
+  {
+    "category": "housewares",
+    "delivered_orders": 5743,
+    "sold_items": 6795,
+    "product_revenue": "615628.69"
+  },
+  {
+    "category": "cool_stuff",
+    "delivered_orders": 3559,
+    "sold_items": 3718,
+    "product_revenue": "610204.10"
+  },
+  {
+    "category": "auto",
+    "delivered_orders": 3810,
+    "sold_items": 4140,
+    "product_revenue": "578966.65"
+  },
+  {
+    "category": "toys",
+    "delivered_orders": 3804,
+    "sold_items": 4030,
+    "product_revenue": "471286.48"
+  },
+  {
+    "category": "garden_tools",
+    "delivered_orders": 3448,
+    "sold_items": 4268,
+    "product_revenue": "470495.28"
+  },
+  {
+    "category": "baby",
+    "delivered_orders": 2809,
+    "sold_items": 2982,
+    "product_revenue": "400421.84"
+  },
+  {
+    "category": "perfumery",
+    "delivered_orders": 3086,
+    "sold_items": 3340,
+    "product_revenue": "390144.65"
+  },
+  {
+    "category": "telephony",
+    "delivered_orders": 4093,
+    "sold_items": 4430,
+    "product_revenue": "309860.23"
+  },
+  {
+    "category": "office_furniture",
+    "delivered_orders": 1254,
+    "sold_items": 1668,
+    "product_revenue": "268154.31"
+  },
+  {
+    "category": "stationery",
+    "delivered_orders": 2264,
+    "sold_items": 2466,
+    "product_revenue": "223788.69"
+  },
+  {
+    "category": "computers",
+    "delivered_orders": 177,
+    "sold_items": 199,
+    "product_revenue": "218684.14"
+  },
+  {
+    "category": "pet_shop",
+    "delivered_orders": 1688,
+    "sold_items": 1924,
+    "product_revenue": "211695.64"
+  },
+  {
+    "category": "musical_instruments",
+    "delivered_orders": 611,
+    "sold_items": 651,
+    "product_revenue": "184315.74"
+  },
+  {
+    "category": "small_appliances",
+    "delivered_orders": 609,
+    "sold_items": 658,
+    "product_revenue": "182754.12"
+  },
+  {
+    "category": "unknown",
+    "delivered_orders": 1392,
+    "sold_items": 1537,
+    "product_revenue": "170726.63"
+  },
+  {
+    "category": "electronics",
+    "delivered_orders": 2517,
+    "sold_items": 2729,
+    "product_revenue": "155043.93"
+  },
+  {
+    "category": "fashion_bags_accessories",
+    "delivered_orders": 1820,
+    "sold_items": 1985,
+    "product_revenue": "149329.39"
+  },
+  {
+    "category": "consoles_games",
+    "delivered_orders": 1018,
+    "sold_items": 1089,
+    "product_revenue": "148003.37"
+  },
+  {
+    "category": "construction_tools_construction",
+    "delivered_orders": 736,
+    "sold_items": 916,
+    "product_revenue": "142108.49"
+  },
+  {
+    "category": "luggage_accessories",
+    "delivered_orders": 1019,
+    "sold_items": 1077,
+    "product_revenue": "138701.63"
+  },
+  {
+    "category": "home_appliances_2",
+    "delivered_orders": 227,
+    "sold_items": 231,
+    "product_revenue": "107953.95"
+  },
+  {
+    "category": "home_construction",
+    "delivered_orders": 483,
+    "sold_items": 596,
+    "product_revenue": "81407.57"
+  },
+  {
+    "category": "home_appliances",
+    "delivered_orders": 747,
+    "sold_items": 754,
+    "product_revenue": "78832.48"
+  },
+  {
+    "category": "agro_industry_and_commerce",
+    "delivered_orders": 177,
+    "sold_items": 206,
+    "product_revenue": "70566.10"
+  },
+  {
+    "category": "furniture_living_room",
+    "delivered_orders": 414,
+    "sold_items": 495,
+    "product_revenue": "67350.70"
+  },
+  {
+    "category": "home_confort",
+    "delivered_orders": 392,
+    "sold_items": 429,
+    "product_revenue": "58008.45"
+  },
+  {
+    "category": "fixed_telephony",
+    "delivered_orders": 212,
+    "sold_items": 255,
+    "product_revenue": "55315.21"
+  },
+  {
+    "category": "air_conditioning",
+    "delivered_orders": 246,
+    "sold_items": 289,
+    "product_revenue": "53323.56"
+  },
+  {
+    "category": "audio",
+    "delivered_orders": 348,
+    "sold_items": 362,
+    "product_revenue": "50570.60"
+  },
+  {
+    "category": "small_appliances_home_oven_and_coffee",
+    "delivered_orders": 72,
+    "sold_items": 73,
+    "product_revenue": "46589.56"
+  },
+  {
+    "category": "kitchen_dining_laundry_garden_furniture",
+    "delivered_orders": 241,
+    "sold_items": 274,
+    "product_revenue": "45531.98"
+  },
+  {
+    "category": "books_general_interest",
+    "delivered_orders": 496,
+    "sold_items": 537,
+    "product_revenue": "45302.15"
+  },
+  {
+    "category": "construction_tools_lights",
+    "delivered_orders": 242,
+    "sold_items": 301,
+    "product_revenue": "39957.00"
+  },
+  {
+    "category": "construction_tools_safety",
+    "delivered_orders": 159,
+    "sold_items": 183,
+    "product_revenue": "38773.22"
+  },
+  {
+    "category": "industry_commerce_and_business",
+    "delivered_orders": 232,
+    "sold_items": 265,
+    "product_revenue": "38498.81"
+  },
+  {
+    "category": "food",
+    "delivered_orders": 441,
+    "sold_items": 499,
+    "product_revenue": "28731.15"
+  },
+  {
+    "category": "market_place",
+    "delivered_orders": 274,
+    "sold_items": 305,
+    "product_revenue": "27795.77"
+  },
+  {
+    "category": "costruction_tools_garden",
+    "delivered_orders": 190,
+    "sold_items": 232,
+    "product_revenue": "25096.28"
+  },
+  {
+    "category": "art",
+    "delivered_orders": 195,
+    "sold_items": 197,
+    "product_revenue": "23657.30"
+  },
+  {
+    "category": "fashion_shoes",
+    "delivered_orders": 235,
+    "sold_items": 257,
+    "product_revenue": "23001.46"
+  },
+  {
+    "category": "drinks",
+    "delivered_orders": 287,
+    "sold_items": 361,
+    "product_revenue": "21529.84"
+  },
+  {
+    "category": "signaling_and_security",
+    "delivered_orders": 138,
+    "sold_items": 197,
+    "product_revenue": "21315.05"
+  },
+  {
+    "category": "furniture_bedroom",
+    "delivered_orders": 90,
+    "sold_items": 103,
+    "product_revenue": "19051.80"
+  },
+  {
+    "category": "books_technical",
+    "delivered_orders": 256,
+    "sold_items": 263,
+    "product_revenue": "18702.23"
+  },
+  {
+    "category": "costruction_tools_tools",
+    "delivered_orders": 97,
+    "sold_items": 103,
+    "product_revenue": "15903.95"
+  },
+  {
+    "category": "food_drink",
+    "delivered_orders": 221,
+    "sold_items": 269,
+    "product_revenue": "14942.88"
+  },
+  {
+    "category": "fashion_male_clothing",
+    "delivered_orders": 106,
+    "sold_items": 125,
+    "product_revenue": "10452.33"
+  },
+  {
+    "category": "fashion_underwear_beach",
+    "delivered_orders": 117,
+    "sold_items": 127,
+    "product_revenue": "9305.95"
+  },
+  {
+    "category": "christmas_supplies",
+    "delivered_orders": 125,
+    "sold_items": 150,
+    "product_revenue": "8737.84"
+  },
+  {
+    "category": "tablets_printing_image",
+    "delivered_orders": 79,
+    "sold_items": 83,
+    "product_revenue": "7528.41"
+  },
+  {
+    "category": "cine_photo",
+    "delivered_orders": 63,
+    "sold_items": 70,
+    "product_revenue": "6674.47"
+  },
+  {
+    "category": "music",
+    "delivered_orders": 38,
+    "sold_items": 38,
+    "product_revenue": "6034.35"
+  },
+  {
+    "category": "dvds_blu_ray",
+    "delivered_orders": 56,
+    "sold_items": 61,
+    "product_revenue": "4542.59"
+  },
+  {
+    "category": "party_supplies",
+    "delivered_orders": 38,
+    "sold_items": 42,
+    "product_revenue": "4465.19"
+  },
+  {
+    "category": "books_imported",
+    "delivered_orders": 50,
+    "sold_items": 57,
+    "product_revenue": "4418.86"
+  },
+  {
+    "category": "furniture_mattress_and_upholstery",
+    "delivered_orders": 37,
+    "sold_items": 37,
+    "product_revenue": "4323.38"
+  },
+  {
+    "category": "portateis_cozinha_e_preparadores_de_alimentos",
+    "delivered_orders": 13,
+    "sold_items": 14,
+    "product_revenue": "3933.63"
+  },
+  {
+    "category": "fashio_female_clothing",
+    "delivered_orders": 36,
+    "sold_items": 45,
+    "product_revenue": "2634.94"
+  },
+  {
+    "category": "fashion_sport",
+    "delivered_orders": 26,
+    "sold_items": 29,
+    "product_revenue": "2094.52"
+  },
+  {
+    "category": "la_cuisine",
+    "delivered_orders": 13,
+    "sold_items": 14,
+    "product_revenue": "2054.99"
+  },
+  {
+    "category": "arts_and_craftmanship",
+    "delivered_orders": 23,
+    "sold_items": 24,
+    "product_revenue": "1814.01"
+  },
+  {
+    "category": "diapers_and_hygiene",
+    "delivered_orders": 25,
+    "sold_items": 37,
+    "product_revenue": "1500.79"
+  },
+  {
+    "category": "pc_gamer",
+    "delivered_orders": 7,
+    "sold_items": 8,
+    "product_revenue": "1306.95"
+  },
+  {
+    "category": "flowers",
+    "delivered_orders": 29,
+    "sold_items": 33,
+    "product_revenue": "1110.04"
+  },
+  {
+    "category": "home_comfort_2",
+    "delivered_orders": 24,
+    "sold_items": 30,
+    "product_revenue": "760.27"
+  },
+  {
+    "category": "cds_dvds_musicals",
+    "delivered_orders": 12,
+    "sold_items": 14,
+    "product_revenue": "730.00"
+  },
+  {
+    "category": "fashion_childrens_clothes",
+    "delivered_orders": 7,
+    "sold_items": 7,
+    "product_revenue": "519.95"
+  },
+  {
+    "category": "security_and_services",
+    "delivered_orders": 2,
+    "sold_items": 2,
+    "product_revenue": "283.29"
+  }
+]

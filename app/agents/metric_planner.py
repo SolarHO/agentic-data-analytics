@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from app.context.metric_registry import METRIC_REGISTRY
-
+from app.context.dimension_registry import DIMENSION_REGISTRY
 from app.context.database_context import (
     DATABASE_SCHEMA,
     BUSINESS_RULES,
@@ -38,6 +38,10 @@ METRIC REGISTRY
 ---------------
 {metric_registry}
 
+DIMENSION REGISTRY
+------------------
+{dimension_registry}
+
 PLANNING RULES
 --------------
 - Do not generate SQL.
@@ -54,6 +58,10 @@ PLANNING RULES
 - Intermediate calculations belong in metric descriptions, not in metrics.
 - Filters must contain row filtering conditions only.
 - Do not put JOIN instructions or metric formulas in filters.
+- Select grouping dimensions only from the DIMENSION REGISTRY.
+- Use the exact canonical dimension name.
+- Do not invent new dimension names.
+- Do not include grouping dimensions in metrics.
 """
 
 
@@ -65,6 +73,7 @@ def create_metric_plan(question: str) -> MetricPlan:
         database_schema=DATABASE_SCHEMA,
         business_rules=BUSINESS_RULES,
         metric_registry=METRIC_REGISTRY,
+        dimension_registry=DIMENSION_REGISTRY,
     )
 
     result = structured_llm.invoke(

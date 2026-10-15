@@ -1,17 +1,29 @@
-
+import json
+from pathlib import Path
 from decimal import Decimal
-from typing import Any, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 
 
 class EvaluationCase(TypedDict):
     id: str
     question: str
-    expected: dict[str, Any]
+    expected: dict[str, Any] | list[dict[str, Any]]
+    evaluation_type: Literal["single", "multi"]
+    dimension: NotRequired[str]
+
+ROOT_DIR = Path(__file__).resolve().parents[2]
+GOLD_DIR = ROOT_DIR / "evaluation" / "gold_results"
+
+
+def load_gold_result(case_id: str) -> list[dict[str, Any]]:
+    path = GOLD_DIR / f"{case_id}.json"
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 EVALUATION_CASES: list[EvaluationCase] = [
     {
         "id": "GQ01",
+        "evaluation_type": "single",
         "question": (
             "배송 완료된 주문의 총 주문 수, 판매 상품 수, "
             "상품 매출, 배송비 매출, 총 거래 금액을 알려줘."
@@ -26,13 +38,34 @@ EVALUATION_CASES: list[EvaluationCase] = [
     },
     {
         "id": "GQ02",
+        "evaluation_type": "single",
         "question": "평균 주문 금액은 얼마야?",
         "expected": {
             "average_order_value": Decimal("137.04"),
         },
     },
     {
+        "id": "GQ03",
+        "question": (
+            "배송 완료된 주문의 월별 주문 수와 상품 매출 추이를 알려줘."
+        ),
+        "evaluation_type": "multi",
+        "dimension": "month",
+        "expected": load_gold_result("GQ03"),
+    },
+    {
+        "id": "GQ04",
+        "question": (
+            "배송 완료된 주문의 상품 카테고리별 주문 수, "
+            "판매 상품 수와 상품 매출을 알려줘."
+        ),
+        "evaluation_type": "multi",
+        "dimension": "category",
+        "expected": load_gold_result("GQ04"),
+    },
+    {
         "id": "GQ05",
+        "evaluation_type": "single",
         "question": (
             "배송 완료된 주문 중 배송일 정보가 있는 주문 수, "
             "배송 지연 주문 수, 배송 지연율을 알려줘."
@@ -45,6 +78,7 @@ EVALUATION_CASES: list[EvaluationCase] = [
     },
     {
         "id": "GQ06",
+        "evaluation_type": "single",
         "question": (
             "전체 리뷰 수, 평균 리뷰 점수, "
             "부정 리뷰 수와 긍정 리뷰 수를 알려줘."

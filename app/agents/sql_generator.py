@@ -2,7 +2,7 @@ import json
 
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-
+from app.context.dimension_registry import DIMENSION_REGISTRY
 from app.context.database_context import (
     DATABASE_SCHEMA,
     BUSINESS_RULES,
@@ -34,6 +34,10 @@ METRIC PLAN
 -----------
 {metric_plan}
 
+DIMENSION REGISTRY
+------------------
+{dimension_registry}
+
 SQL GENERATION RULES
 --------------------
 - Generate exactly one PostgreSQL SELECT query.
@@ -50,6 +54,12 @@ SQL GENERATION RULES
 - Never generate INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or TRUNCATE.
 - Return SQL only.
 - Do not include Markdown code fences or explanations.
+- Use the DIMENSION REGISTRY to interpret grouping dimensions.
+- Use each selected dimension's exact canonical name as its SQL alias.
+- Include every selected dimension in the final SELECT output.
+- Group results by the selected dimensions.
+- For the month dimension, use the calendar month of orders.order_purchase_timestamp.
+- For the category dimension, preserve untranslated and null categories using the registry definition.
 """
 
 
@@ -81,6 +91,7 @@ def generate_sql(state: AnalysisState) -> AnalysisState:
         database_schema=DATABASE_SCHEMA,
         business_rules=BUSINESS_RULES,
         metric_plan=plan_json,
+        dimension_registry=DIMENSION_REGISTRY,
     )
 
     response = llm.invoke(

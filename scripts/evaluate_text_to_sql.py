@@ -1,5 +1,8 @@
 from app.evaluation.cases import EVALUATION_CASES
-from app.evaluation.evaluator import compare_result
+from app.evaluation.evaluator import (
+    compare_result,
+    compare_multirow_result,
+)
 from app.graph.analysis_graph import analysis_graph
 
 
@@ -56,10 +59,17 @@ def main():
                 continue
 
             # 4. Gold Result: 실제 SQL 실행 결과와 기준값 비교
-            success, errors = compare_result(
-                actual=actual,
-                expected=expected,
-            )
+            if case["evaluation_type"] == "multi":
+                success, errors = compare_multirow_result(
+                    actual=actual,
+                    expected=expected,
+                    dimension=case["dimension"],
+                )
+            else:
+                success, errors = compare_result(
+                    actual=actual,
+                    expected=expected,
+                )
 
             print("\nExpected:")
             print(expected)

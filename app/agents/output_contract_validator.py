@@ -1,3 +1,4 @@
+
 from app.graph.state import AnalysisState
 
 
@@ -25,22 +26,35 @@ def validate_output_contract(
             "contract_error": "Query returned no rows.",
         }
 
-    expected_columns = {
+    expected_metrics = {
         metric.name
         for metric in metric_plan.metrics
     }
 
+    expected_dimensions = set(metric_plan.dimensions)
+
+    expected_columns = expected_metrics | expected_dimensions
     actual_columns = set(result[0].keys())
 
     missing_columns = expected_columns - actual_columns
+    unexpected_columns = actual_columns - expected_columns
+
+    errors = []
 
     if missing_columns:
+        errors.append(
+            f"Missing columns: {sorted(missing_columns)}"
+        )
+
+    if unexpected_columns:
+        errors.append(
+            f"Unexpected columns: {sorted(unexpected_columns)}"
+        )
+
+    if errors:
         return {
             "contract_valid": False,
-            "contract_error": (
-                "Missing expected metric columns: "
-                + ", ".join(sorted(missing_columns))
-            ),
+            "contract_error": "; ".join(errors),
         }
 
     return {

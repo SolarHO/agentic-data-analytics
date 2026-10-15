@@ -18,6 +18,11 @@ MetricName = Literal[
     "positive_reviews",
 ]
 
+DimensionName = Literal[
+    "month",
+    "category",
+]
+
 class MetricDefinition(BaseModel):
     name: MetricName = Field(
         description="Select a canonical metric name from the registry."
@@ -45,7 +50,11 @@ class MetricPlan(BaseModel):
     )
     
     #그룹화 기준
-    dimensions: list[str] = Field(
+    # dimensions: list[str] = Field(
+    #     default_factory=list,
+    #     description="Grouping dimensions, such as month or category."
+    # )
+    dimensions: list[DimensionName] = Field(
         default_factory=list,
-        description="Grouping dimensions, such as month or category."
+        description="Canonical grouping dimensions selected from the registry."
     )
