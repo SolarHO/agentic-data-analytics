@@ -1,21 +1,25 @@
+
 from sqlalchemy import text
 
-from app.db.postgres import engine
+from app.agents.sql_error_classifier import (
+    classify_sql_error,
+)
+from app.db.postgres import read_engine
 from app.graph.state import AnalysisState
 
 
 def execute_sql(state: AnalysisState) -> AnalysisState:
     if not state.get("sql_valid", False):
         return {
-            **state,
             "result": [],
             "execution_error": "SQL validation failed.",
+            "execution_error_type": "validation_error",
         }
 
     sql = state.get("sql", "").strip()
 
     try:
-        with engine.connect() as connection:
+        with read_engine.connect() as connection:
             query_result = connection.execute(text(sql))
 
             rows = [
@@ -24,14 +28,16 @@ def execute_sql(state: AnalysisState) -> AnalysisState:
             ]
 
         return {
-            **state,
             "result": rows,
             "execution_error": None,
+            "execution_error_type": None,
         }
 
     except Exception as exc:
+        error_type = classify_sql_error(exc)
+
         return {
-            **state,
             "result": [],
             "execution_error": str(exc),
+            "execution_error_type": error_type.value,
         }

@@ -1,42 +1,65 @@
 # Agentic Data Analytics Platform
 
-자연어로 데이터 분석을 요청하면 AI Agent가 데이터와 비즈니스 정의를 바탕으로  
-SQL 생성, 데이터 조회, 분석, 검증 및 결과 보고까지 수행하는 **AI 기반 데이터 분석 자동화 플랫폼**입니다.
+**LangGraph 기반 자연어 데이터 분석 및 SQL 자동 복구 플랫폼**
 
-현재는 Olist E-commerce 데이터를 기반으로 분석용 PostgreSQL 데이터베이스와  
-Gold Query 및 자동 검증 환경을 구축했으며, 이후 LangGraph 기반 Text-to-SQL, RAG,  
-Python Analysis, Kafka 기반 비동기 처리 및 Multi-Agent 구조로 확장할 예정입니다.
+자연어로 데이터 분석을 요청하면 AI Agent가 데이터베이스 스키마와 비즈니스 지표 정의를 기반으로 SQL을 생성하고, 실행 결과를 검증하며, 복구 가능한 SQL 오류를 자동으로 수정하는 데이터 분석 프로젝트입니다.
+
+단순한 Text-to-SQL 구현을 넘어 **Metric-driven Analytics, SQL Validation, Read-only Execution, Error Recovery, Automated Evaluation**을 통해 분석의 정확성과 실행 안정성을 확보하는 것을 목표로 합니다.
+
+**Current Phase: Agentic Text-to-SQL Workflow 구현 완료 · 데이터 플랫폼 확장 진행 예정**
 
 ---
 
 ## 1. Project Overview
 
-일반적인 데이터 분석 과정에서는 사용자의 분석 요청을 이해한 뒤 데이터 구조를 확인하고,
-SQL을 작성하고, 결과를 검증하고, 다시 해석하는 과정이 반복됩니다.
+일반적인 데이터 분석 과정에서는 자연어 요구사항을 이해하고, 데이터 구조를 확인하고, SQL을 작성한 뒤 결과를 검증하는 과정이 반복됩니다.
 
-이 프로젝트는 이러한 과정을 AI Agent 기반 Workflow로 자동화하는 것을 목표로 합니다.
+LLM을 활용하면 SQL 작성 과정을 자동화할 수 있지만, SQL이 정상적으로 실행된다고 해서 분석 결과까지 정확하다고 보장할 수는 없습니다.
 
-최종적으로 다음과 같은 질문을 자연어로 처리할 수 있는 분석 시스템을 구현합니다.
+이 프로젝트는 다음 문제를 해결하는 데 초점을 맞췄습니다.
 
-> "배송 완료 주문의 평균 주문 금액은?"
+- **Metric Consistency:** 같은 비즈니스 지표를 일관된 기준으로 계산
+- **SQL Reliability:** 잘못된 테이블·컬럼 참조 및 SQL 실행 오류 처리
+- **Execution Safety:** LLM 생성 SQL을 제한된 데이터베이스 권한으로 실행
+- **Result Verification:** 요청한 지표와 실제 반환 컬럼의 일치 여부 확인
+- **Recovery & Traceability:** SQL 수정 과정과 최종 복구 상태 기록
 
-> "월별 매출 추이를 분석해줘."
+### Example Questions
 
-> "배송 지연과 리뷰 점수 사이에 어떤 관계가 있는지 분석해줘."
+> 배송 완료 주문의 평균 주문 금액은?
 
-단순히 LLM이 SQL을 생성하는 것에서 끝나는 것이 아니라,
+> 월별 주문 수와 상품 매출 추이를 알려줘.
 
-- 데이터베이스 스키마
-- KPI 및 비즈니스 지표 정의
-- 데이터 품질 정보
-- SQL 실행 결과
-- 분석 결과 검증
+> 카테고리별 주문 수와 판매 상품 수를 비교해줘.
 
-을 함께 활용하여 보다 신뢰할 수 있는 분석 Workflow를 구축하는 것이 핵심 목표입니다.
+> 배송 지연율과 평균 리뷰 점수를 알려줘.
+
+현재는 Olist E-commerce 데이터의 정형 분석 질문을 대상으로 구현 및 평가했습니다.
 
 ---
 
-## 2. Target Architecture
+## 2. Architecture
+
+### 2.1 Implemented Agent Workflow
+
+```mermaid
+flowchart TD
+    A["Natural Language Question"] --> B["Metric Planner"]
+    B --> C["SQL Generator"]
+    C --> D{"SQL Validator"}
+    D -->|PASS| E["Read-only SQL Executor"]
+    D -->|FAIL| I["Recovery Finalizer"]
+    E -->|SUCCESS| F["Output Contract Validator"]
+    E -->|RETRYABLE ERROR| G["SQL Repair Agent"]
+    E -->|STOP| I
+    G -->|"Max 1 Repair"| D
+    F --> I
+    I --> H["Analysis Result + Recovery History"]
+```
+
+### 2.2 Target Platform Architecture
+
+최종적으로는 자연어 요청을 비동기적으로 처리하고, 정형·비정형 데이터 분석을 결합하는 플랫폼으로 확장할 계획입니다.
 
 ```text
 User / Slack
@@ -53,18 +76,11 @@ User / Slack
       ▼
   LangGraph
       │
-      ├── Context / RAG
-      │
-      ├── SQL Agent
-      │
-      ├── SQL Validator
-      │
-      ├── SQL Executor
-      │
+      ├── Metric Planner
+      ├── SQL Analysis
+      ├── RAG / Context
       ├── Python Analysis
-      │
       ├── Result Validator
-      │
       └── Report Agent
       │
       ▼
@@ -77,8 +93,7 @@ PostgreSQL / pgvector
       └── BI Dashboard
 ```
 
-> 위 구조는 프로젝트의 **목표 아키텍처**입니다.  
-> 현재는 PostgreSQL 기반 분석 데이터 계층과 Gold Query 검증 환경까지 구현되어 있습니다.
+> 위 구조는 목표 아키텍처입니다. 현재 구현된 범위는 PostgreSQL 기반 데이터 계층과 LangGraph Text-to-SQL 및 SQL Recovery Workflow입니다. Kafka, RAG, n8n, Slack 자동화 등은 아직 통합되지 않았습니다.
 
 ---
 
@@ -86,43 +101,54 @@ PostgreSQL / pgvector
 
 ### Data & Backend Foundation
 
-- [x] Python 가상환경 구성
-- [x] FastAPI 프로젝트 구조 구성
-- [x] Docker 기반 PostgreSQL 16 환경 구축
-- [x] FastAPI ↔ PostgreSQL 연결
+- [x] Python 3.12 가상환경 및 프로젝트 구성
+- [x] FastAPI 기본 프로젝트 구조 및 DB 연결
+- [x] Docker 기반 PostgreSQL 16 구축
 - [x] Olist 데이터 프로파일링
-- [x] Primary Key / Foreign Key 후보 검증
+- [x] PK / FK 후보 및 데이터 관계 검증
 - [x] PostgreSQL Schema 설계
-- [x] Olist 데이터 PostgreSQL 적재
-- [x] 데이터 적재 Row Count 검증
-- [x] Gold Query 작성
-- [x] pytest 기반 Gold Query 자동 검증
+- [x] Olist 데이터 적재 및 Row Count 검증
+- [x] Gold Query 6개 작성
+- [x] pytest 기반 데이터 검증
 
 ### Agentic Analytics
 
-- [ ] LangGraph Workflow
-- [ ] Text-to-SQL Agent
-- [ ] SQL Validator
-- [ ] SQL Executor
-- [ ] Result Validator
+- [x] LangGraph 기반 분석 Workflow
+- [x] Metric Registry / Dimension Registry
+- [x] Structured Metric Planner
+- [x] LLM 기반 SQL Generator
+- [x] SQL Validator 기본 구현
+- [x] Read-only SQL Executor
+- [x] Output Contract Validator
+- [x] PostgreSQL SQLSTATE Error Classifier
+- [x] SQL Repair Agent
+- [x] 최대 1회 SQL 재생성 및 재검증
+- [x] Conditional Routing
+- [x] Recovery History / Recovery Finalizer
+- [ ] AST 기반 SQL Validator 강화
+- [ ] SQL 결과 행 수 및 실행 자원 제한 강화
 - [ ] RAG / pgvector
 - [ ] Python Analysis Agent
 - [ ] Report Agent
 
-### Platform
+### Platform Integration
 
-- [ ] Kafka Worker
-- [ ] Retry / DLQ
+- [ ] Kafka Worker 및 비동기 요청 처리
+- [ ] Kafka Retry / DLQ
 - [ ] n8n Workflow
 - [ ] Slack Integration
-- [ ] BI Integration
+- [ ] BI Dashboard Integration
 
 ### Evaluation
 
-- [ ] Text-to-SQL Evaluation
-- [ ] Single-Agent Evaluation
-- [ ] Multi-Agent Evaluation
-- [ ] Accuracy / Latency / Token / Cost 비교
+- [x] Gold Query Ground Truth 구축
+- [x] Single-row / Multi-row SQL 결과 비교
+- [x] Text-to-SQL Evaluation v2
+- [x] SQL Recovery 단위 테스트 및 통합 테스트
+- [x] 실제 LLM + PostgreSQL 복구 E2E 검증
+- [ ] 반복 실행 및 질문 표현 변형 평가
+- [ ] Single-Agent vs Multi-Agent 비교
+- [ ] Latency / Token Usage / Cost 평가
 
 ---
 
@@ -130,35 +156,25 @@ PostgreSQL / pgvector
 
 프로젝트의 분석 데이터로 **Brazilian E-Commerce Public Dataset by Olist**를 사용합니다.
 
-주요 데이터는 다음과 같습니다.
-
-| Dataset | Description |
-|---|---|
-| Customers | 고객 정보 |
-| Orders | 주문 정보 |
-| Order Items | 주문 상품 정보 |
-| Payments | 결제 정보 |
-| Reviews | 리뷰 및 평점 |
-| Products | 상품 정보 |
-| Sellers | 판매자 정보 |
+| Dataset              | Description   |
+| -------------------- | ------------- |
+| Customers            | 고객 정보         |
+| Orders               | 주문 정보 및 배송 상태 |
+| Order Items          | 주문별 상품 및 가격   |
+| Payments             | 주문 결제 정보      |
+| Reviews              | 리뷰 및 평점       |
+| Products             | 상품 및 카테고리     |
+| Sellers              | 판매자 정보        |
 | Category Translation | 상품 카테고리 영문 변환 |
-| Geolocation | 우편번호 기반 위치 정보 |
+| Geolocation          | 우편번호 기반 위치 정보 |
 
-원본 CSV 파일은 Repository에 포함하지 않습니다.
-
-데이터 파일은 로컬의 다음 경로에 배치하여 사용합니다.
-
-```text
-data/raw/
-```
+원본 CSV 파일은 저장소에 포함하지 않으며 로컬 `data/raw/` 경로에서 관리합니다.
 
 ---
 
-## 5. Database Design
+## 5. Database Design & Data Quality
 
-데이터 분석 전 실제 데이터의 Key 관계와 데이터 품질을 검증한 뒤 PostgreSQL Schema를 설계했습니다.
-
-주요 관계는 다음과 같습니다.
+데이터 적재에 앞서 원본 CSV의 Key 관계와 데이터 품질을 검증하고 PostgreSQL Schema를 설계했습니다.
 
 ```text
 customers
@@ -167,7 +183,6 @@ customers
   orders
     │
     ├──────────────► order_payments
-    │
     ├──────────────► order_reviews
     │
     ▼
@@ -183,181 +198,389 @@ order_items
 
 ### Data Quality Findings
 
-데이터를 직접 검증하는 과정에서 몇 가지 중요한 특성을 확인했습니다.
+**1. Review Primary Key**
 
-**1. `review_id`는 단독으로 Unique하지 않음**
+`review_id`는 단독으로 Unique하지 않아 `(review_id, order_id)` 복합키를 사용했습니다.
 
-`order_reviews` 데이터에서 `review_id` 중복이 존재하기 때문에 다음 복합키를 사용합니다.
+**2. Category Translation Missing Values**
 
-```text
-(review_id, order_id)
-```
-
-**2. Category Translation 데이터가 완전하지 않음**
-
-`products`에 존재하는 다음 두 카테고리가 translation 데이터에 존재하지 않습니다.
+다음 두 카테고리는 번역 데이터에 존재하지 않습니다.
 
 ```text
 pc_gamer
 portateis_cozinha_e_preparadores_de_alimentos
 ```
 
-따라서 `products → category_translation` 관계에는 물리적인 Foreign Key를 적용하지 않고,
-분석 시 `LEFT JOIN`을 사용합니다.
+해당 관계에 물리적인 Foreign Key를 적용하지 않고 분석 시 `LEFT JOIN`과 원본 카테고리 대체 처리를 사용합니다.
 
-**3. Geolocation 데이터는 ZIP Prefix 기준으로 Unique하지 않음**
+**3. Geolocation Duplicate ZIP Prefix**
 
-동일 ZIP Prefix에 여러 좌표 및 지역 정보가 존재하기 때문에 ZIP Prefix를 단순 Primary Key 또는
-Foreign Key로 사용하지 않습니다.
-
-상세한 데이터 모델 및 데이터 품질 내용은 향후 `docs/database.md`에서 관리할 예정입니다.
+동일 ZIP Prefix에 복수의 위치 정보가 존재하므로 이를 단순 Primary Key 또는 Foreign Key로 사용하지 않았습니다.
 
 ---
 
 ## 6. Data Ingestion
 
-Olist 9개 데이터셋을 PostgreSQL에 적재하고 CSV와 데이터베이스의 Row Count를 비교하여
-적재 결과를 검증했습니다.
+Olist 9개 테이블의 적재 결과를 검증했습니다.
 
-| Table | Rows |
-|---|---:|
-| customers | 99,441 |
-| category_translation | 71 |
-| products | 32,951 |
-| sellers | 3,095 |
-| orders | 99,441 |
-| order_items | 112,650 |
-| order_payments | 103,886 |
-| order_reviews | 99,224 |
-| geolocation | 1,000,163 |
-| **Total** | **1,550,922** |
+| Table                |          Rows |
+| -------------------- | ------------: |
+| customers            |        99,441 |
+| category_translation |            71 |
+| products             |        32,951 |
+| sellers              |         3,095 |
+| orders               |        99,441 |
+| order_items          |       112,650 |
+| order_payments       |       103,886 |
+| order_reviews        |        99,224 |
+| geolocation          |     1,000,163 |
+| **Total**            | **1,550,922** |
 
 ---
 
-## 7. Gold Queries
+## 7. Agent Workflow & Core Components
+
+### 7.1 Metric Planner
+
+사용자의 자연어 질문을 구조화된 Metric Plan으로 변환합니다.
+
+Metric Plan은 Pydantic Schema를 사용하며 다음 정보를 포함합니다.
+
+- Intent: `aggregation`, `comparison`, `trend`, `detail`
+- Metrics: Metric Registry에 정의된 정규 지표
+- Dimensions: `month`, `category`
+- Filters: 분석에 필요한 비즈니스 필터
+
+Metric Registry는 지표의 비즈니스 의미를 관리하고, SQL Generator가 해당 정의를 따르도록 유도합니다.
+
+### 7.2 SQL Generator
+
+질문, Metric Plan, Database Schema, Business Rules, Dimension Registry를 활용해 PostgreSQL SQL을 생성합니다.
+
+출력 컬럼에는 정규 지표명과 차원명을 사용하도록 설계했습니다.
+
+### 7.3 SQL Validator
+
+LLM이 생성한 SQL이 기본 실행 조건을 만족하는지 확인합니다.
+
+현재는 `SELECT` 또는 `WITH` 기반 SQL 형태와 금지 키워드를 검사하는 기본 Validator를 사용합니다.
+
+**현재 Validator는 완전한 SQL Parser 또는 보안 경계가 아닙니다.** 향후 AST 기반 검증, 다중 문장 차단, 허용 함수·테이블 제한 등을 강화할 계획입니다.
+
+### 7.4 Read-only SQL Executor
+
+LLM이 생성한 SQL은 데이터 적재용 계정이 아닌 별도 PostgreSQL 계정으로 실행합니다.
+
+| DB Account         | Usage                |
+| ------------------ | -------------------- |
+| `analytics_user`   | 데이터 적재 및 스키마 관리      |
+| `analytics_reader` | LLM 생성 SQL의 읽기 전용 실행 |
+
+분석 계정에는 다음 제약을 구성했습니다.
+
+```text
+SELECT privilege
+default_transaction_read_only = on
+statement_timeout = 10s
+```
+
+SQL Executor는 SQLAlchemy의 별도 `read_engine`을 사용합니다.
+
+### 7.5 Output Contract Validator
+
+SQL이 성공적으로 실행되더라도 반환 결과가 요청한 지표와 일치하지 않을 수 있습니다.
+
+이를 감지하기 위해 Metric Plan에 정의된 지표·차원과 SQL 실행 결과의 컬럼 구성을 비교합니다.
+
+검사 항목에는 필수 컬럼 누락과 예상하지 않은 컬럼 반환이 포함됩니다.
+
+단, Output Contract 검증은 결과 구조를 검사하는 기능이며, 모든 수치의 의미적 정확성을 보증하지 않습니다.
+
+---
+
+## 8. SQL Error Recovery
+
+### 8.1 SQLSTATE Error Classification
+
+PostgreSQL 오류 코드를 기반으로 복구 가능한 오류를 분류합니다.
+
+| SQLSTATE | Error             | Recovery  |
+| -------- | ----------------- | --------- |
+| `42601`  | Syntax Error      | Candidate |
+| `42703`  | Undefined Column  | Candidate |
+| `42P01`  | Undefined Table   | Candidate |
+| `42501`  | Permission Denied | Stop      |
+| `57014`  | Query Canceled    | Stop      |
+| Other    | Unknown           | Stop      |
+
+### 8.2 SQL Repair Agent
+
+복구 가능한 오류가 발생하면 기존 질문, Metric Plan, 실패 SQL, 데이터베이스 스키마 및 오류 정보를 기반으로 수정 SQL을 생성합니다.
+
+수정 SQL은 기존 Validator와 읽기 전용 Executor를 다시 통과합니다.
+
+```text
+SQL Execution Error
+        │
+        ▼
+Error Classification
+        │
+        ├── Non-retryable → Stop
+        │
+        ▼
+SQL Repair Agent
+        │
+        ▼
+SQL Validator
+        │
+        ▼
+SQL Executor
+```
+
+무한 재시도를 방지하기 위해 SQL 재생성 횟수는 **최대 1회**로 제한합니다.
+
+### 8.3 Recovery Tracking
+
+복구 시도 과정에서 다음 정보를 State에 저장합니다.
+
+```json
+{
+  "attempt": 1,
+  "failed_sql": "SELECT COUNT(nonexistent_column) ...",
+  "error_type": "undefined_column",
+  "repaired_sql": "SELECT COUNT(DISTINCT order_id) ...",
+  "status": "recovered"
+}
+```
+
+Recovery Finalizer는 실행 결과와 Output Contract 검증 결과에 따라 상태를 확정합니다.
+
+| Status          | Meaning                 |
+| --------------- | ----------------------- |
+| `not_attempted` | SQL 복구 시도 없음            |
+| `recovered`     | 수정 SQL 실행 및 결과 계약 검증 성공 |
+| `failed`        | 복구 시도 후 검증 또는 실행 실패     |
+
+### 8.4 End-to-End Recovery Example
+
+**Test Question**
+
+> 배송 완료된 주문 수를 알려줘.
+
+**Initial SQL**
+
+```sql
+SELECT COUNT(nonexistent_column) AS delivered_orders
+FROM orders
+WHERE order_status = 'delivered';
+```
+
+**PostgreSQL Error**
+
+```text
+undefined_column
+```
+
+**LLM Repaired SQL**
+
+```sql
+SELECT COUNT(DISTINCT orders.order_id) AS delivered_orders
+FROM orders
+WHERE orders.order_status = 'delivered';
+```
+
+**Verified Result**
+
+```text
+Retry Count: 1
+SQL Valid: True
+Execution Error: None
+Contract Valid: True
+Result: [{'delivered_orders': 96478}]
+Recovery Status: recovered
+
+Graph Recovery E2E: PASS
+```
+
+이 테스트는 실제 PostgreSQL과 OpenAI 모델을 사용하며, 최초 SQL Generator만 오류를 재현하는 테스트용 함수로 대체했습니다.
+
+---
+
+## 9. Gold Queries & Evaluation
 
 LLM이 생성한 SQL의 실행 성공 여부만으로는 분석 정확성을 판단하기 어렵습니다.
 
-따라서 주요 비즈니스 질문에 대해 사람이 직접 작성하고 검증한 **Gold Query**를 구축하여
-향후 Text-to-SQL Agent의 Ground Truth로 사용합니다.
+따라서 사람이 검증한 Gold Query를 Ground Truth로 활용합니다.
 
-현재 정의한 주요 분석 지표는 다음과 같습니다.
+| Gold Query | Description          |
+| ---------- | -------------------- |
+| GQ01       | 배송 완료 주문 수 및 매출 집계   |
+| GQ02       | Average Order Value  |
+| GQ03       | 월별 주문 수 및 상품 매출      |
+| GQ04       | 카테고리별 주문 수·상품 수 및 매출 |
+| GQ05       | 배송 지연율               |
+| GQ06       | 리뷰 집계 및 평균 점수        |
 
-| Gold Query | Description |
-|---|---|
-| GQ01 | 배송 완료 주문 매출 |
-| GQ02 | Average Order Value |
-| GQ03 | 월별 상품 매출 |
-| GQ04 | 카테고리별 상품 매출 |
-| GQ05 | 배송 지연률 |
-| GQ06 | 리뷰 점수 |
+### Reference Metrics
 
-현재 검증된 주요 기준값:
+| Metric               |        Result |
+| -------------------- | ------------: |
+| Delivered Orders     |        96,478 |
+| Sold Items           |       110,197 |
+| Product Revenue      | 13,221,498.11 |
+| Freight Value        |  2,198,275.64 |
+| Gross Item Value     | 15,419,773.75 |
+| Average Order Value  |        137.04 |
+| Delivery Delay Rate  |         8.11% |
+| Average Review Score |          4.09 |
 
-| Metric | Result |
-|---|---:|
-| Delivered Orders | 96,478 |
-| Sold Items | 110,197 |
-| Product Revenue | 13,221,498.11 |
-| Freight Value | 2,198,275.64 |
-| Gross Item Value | 15,419,773.75 |
-| Average Order Value | 137.04 |
-| Delivery Delay Rate | 8.11% |
-| Average Review Score | 4.09 |
+Average Order Value는 개별 상품 가격의 평균이 아니라 배송 완료 주문별 상품 매출 합계의 평균입니다.
 
-### Metric Definition Example
+### Text-to-SQL Evaluation v2
 
-Average Order Value는 상품의 평균 가격이 아니라 **주문 단위 매출의 평균**으로 정의합니다.
-
-```text
-order_items
-      │
-      │ GROUP BY order_id
-      ▼
-order revenue
-      │
-      │ AVG
-      ▼
-     AOV
-```
-
-이러한 지표 정의는 향후 RAG Context와 Agent Evaluation에도 활용할 예정입니다.
-
----
-
-## 8. Automated Validation
-
-Gold Query의 핵심 결과가 데이터베이스 또는 코드 변경으로 인해 달라지는 것을 감지하기 위해
-`pytest` 기반 테스트를 구성했습니다.
-
-현재 테스트 결과:
+평가 범위는 단일 행 집계, 월별 다중 행, 카테고리별 다중 행을 포함합니다.
 
 ```text
-test_delivered_sales_summary PASSED
-test_average_order_value      PASSED
-test_delivery_delay_rate      PASSED
-test_review_summary           PASSED
-
-4 passed
+=== Evaluation Summary ===
+Passed: 6/6
+Execution Accuracy: 100.00%
 ```
 
-테스트 실행:
+이 수치는 **정의된 6개 Gold Query에 대한 단일 평가 실행 결과**이며, 일반적인 자연어 질문 전체에 대해 100% 정확도를 보장한다는 의미는 아닙니다.
 
-```bash
-pytest tests/test_gold_queries.py -v
+월별 결과 23행과 카테고리별 결과 74행도 검증했습니다. 평가기는 차원 키 기준 비교, 행 누락·중복 검출 및 수치 비교를 지원합니다.
+
+평가 실행:
+
+```powershell
+python -m scripts.evaluate_text_to_sql
 ```
+
+평가 과정에서 OpenAI API 호출 비용이 발생합니다.
 
 ---
 
-## 9. Tech Stack
+## 10. Automated Testing
 
-| Area | Technology |
-|---|---|
-| Language | Python 3.12 |
-| API | FastAPI |
-| Database | PostgreSQL 16 |
-| ORM / DB Access | SQLAlchemy, psycopg |
-| Container | Docker / Docker Compose |
-| Agent Workflow | LangGraph |
-| LLM Integration | LangChain / OpenAI |
-| Vector Database | pgvector (Planned) |
-| Messaging | Apache Kafka (Planned) |
-| Workflow Automation | n8n (Planned) |
-| Analysis | Pandas / Python |
-| Testing | pytest |
-| BI | Tableau / Power BI (Planned) |
+pytest를 통해 데이터베이스 지표, 결과 계약, 오류 분류, 조건부 라우팅, SQL Repair, Recovery Finalizer를 검증합니다.
+
+최근 로컬 검증 결과:
+
+```text
+45 passed in 1.52s
+```
+
+포함되는 주요 테스트:
+
+- Gold Query 기준값 검증
+- 다중 행 결과 비교
+- Output Contract Validation
+- SQLSTATE 오류 분류
+- SQL Validation 조건부 분기
+- SQL Recovery 재시도 및 종료 경로
+- SQL Repair Agent Mock 테스트
+- Recovery Finalizer 상태 검증
+- LangGraph 복구 통합 테스트
+
+전체 테스트:
+
+```powershell
+python -m pytest -q
+```
+
+SQL 복구 실제 E2E 테스트:
+
+```powershell
+python -m scripts.test_sql_repair_e2e
+python -m scripts.test_graph_recovery_e2e
+```
+
+E2E 스크립트는 실제 OpenAI API를 호출하므로 별도의 비용이 발생합니다.
 
 ---
 
-## 10. Project Structure
+## 11. Tech Stack
+
+| Area                | Technology                               |
+| ------------------- | ---------------------------------------- |
+| Language            | Python 3.12                              |
+| Database            | PostgreSQL 16                            |
+| Database Access     | SQLAlchemy, psycopg                      |
+| Container           | Docker / Docker Compose                  |
+| Agent Workflow      | LangGraph                                |
+| LLM                 | OpenAI GPT-5 mini                        |
+| LLM Integration     | LangChain                                |
+| Validation          | Pydantic, pytest                         |
+| API Foundation      | FastAPI                                  |
+| Data Processing     | Pandas                                   |
+| Vector Database     | pgvector (Planned)                       |
+| Messaging           | Apache Kafka (Planned)                   |
+| Workflow Automation | n8n (Planned)                            |
+| BI                  | Tableau / Power BI (Planned Integration) |
+
+---
+
+## 12. Project Structure
+
+주요 파일 기준 구조입니다.
 
 ```text
 agentic-data-analytics/
 │
 ├── app/
-│   ├── api/
 │   ├── agents/
+│   │   ├── metric_planner.py
+│   │   ├── sql_generator.py
+│   │   ├── sql_validator.py
+│   │   ├── sql_executor.py
+│   │   ├── sql_error_classifier.py
+│   │   ├── sql_repair.py
+│   │   ├── output_contract_validator.py
+│   │   └── recovery_finalizer.py
+│   │
+│   ├── context/
+│   │   ├── database_context.py
+│   │   ├── metric_registry.py
+│   │   └── dimension_registry.py
+│   │
 │   ├── db/
+│   │   └── postgres.py
+│   │
 │   ├── graph/
+│   │   ├── state.py
+│   │   ├── metric_plan.py
+│   │   └── analysis_graph.py
+│   │
+│   ├── evaluation/
+│   │   ├── cases.py
+│   │   └── evaluator.py
+│   │
 │   └── main.py
 │
 ├── data/
-│   └── raw/                 # Local dataset (Git ignored)
+│   └── raw/                    # Git ignored
 │
-├── docs/                    # Technical documentation
+├── evaluation/
+│   └── gold_results/
 │
 ├── scripts/
-│   ├── inspect_olist.py
-│   ├── validate_keys.py
-│   ├── validate_relationships.py
-│   └── load_olist.py
+│   ├── load_olist.py
+│   ├── evaluate_text_to_sql.py
+│   ├── test_sql_repair_e2e.py
+│   └── test_graph_recovery_e2e.py
 │
 ├── sql/
 │   ├── schema.sql
 │   └── gold_queries.sql
 │
 ├── tests/
-│   └── test_gold_queries.py
+│   ├── test_gold_queries.py
+│   ├── test_graph_routing.py
+│   ├── test_sql_error_classifier.py
+│   ├── test_sql_repair.py
+│   ├── test_sql_recovery_graph.py
+│   ├── test_recovery_finalizer.py
+│   └── test_recovery_finalizer_graph.py
 │
 ├── docker-compose.yml
 ├── pyproject.toml
@@ -368,62 +591,69 @@ agentic-data-analytics/
 
 ---
 
-## 11. Getting Started
+## 13. Getting Started
 
 ### 1. Clone Repository
 
-```bash
-git clone <repository-url>
+```powershell
+git clone https://github.com/SolarHO/agentic-data-analytics.git
 cd agentic-data-analytics
 ```
 
 ### 2. Create Virtual Environment
 
-```bash
+```powershell
 python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-Windows PowerShell:
+PowerShell 실행 정책으로 활성화가 차단된다면 현재 세션에서 다음 명령을 실행할 수 있습니다.
 
 ```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 3. Install Dependencies
+### 3. Configure Environment
 
-```bash
-pip install -r requirements.txt
+`.env.example`을 복사해 `.env`를 생성합니다.
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-### 4. Configure Environment Variables
+`.env`에 PostgreSQL 연결 정보와 OpenAI API Key를 설정합니다.
 
-`.env.example`을 복사하여 `.env` 파일을 생성합니다.
-
-```env
+```dotenv
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=analytics
 DB_USER=analytics_user
-DB_PASSWORD=<your-password>
+DB_PASSWORD=your_db_password
+
+DB_READ_USER=analytics_reader
+DB_READ_PASSWORD=your_reader_password
+
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-### 5. Start PostgreSQL
+비밀번호 및 실제 API Key는 Git에 커밋하지 않습니다.
 
-```bash
+### 4. Start PostgreSQL
+
+```powershell
 docker compose up -d
 ```
 
-### 6. Create Database Schema
-
-Windows PowerShell:
+### 5. Create Database Schema
 
 ```powershell
 Get-Content sql\schema.sql |
-docker exec -i analytics-postgres `
-psql -U analytics_user -d analytics
+    docker exec -i analytics-postgres psql -U analytics_user -d analytics
 ```
 
-### 7. Prepare Dataset
+### 6. Load Dataset
 
 Olist CSV 파일을 다음 경로에 배치합니다.
 
@@ -431,86 +661,112 @@ Olist CSV 파일을 다음 경로에 배치합니다.
 data/raw/
 ```
 
-### 8. Load Data
+그다음 적재 스크립트를 실행합니다.
 
-```bash
+```powershell
 python -m scripts.load_olist
 ```
 
-### 9. Run Tests
+### 7. Configure Read-only Database Role
 
-```bash
-pytest
+LLM 생성 SQL을 실행할 별도 PostgreSQL 계정을 구성합니다.
+
+```powershell
+docker exec -it analytics-postgres psql -U analytics_user -d analytics
 ```
 
----
+PostgreSQL 세션에서 관리자 권한을 가진 적절한 계정으로 다음 권한 설정을 수행합니다.
 
-## 12. Evaluation Plan
+```sql
+CREATE ROLE analytics_reader LOGIN;
 
-최종적으로 동일한 분석 질문에 대해 **Single-Agent와 Multi-Agent Workflow를 비교**할 예정입니다.
+GRANT CONNECT ON DATABASE analytics TO analytics_reader;
+GRANT USAGE ON SCHEMA public TO analytics_reader;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO analytics_reader;
 
-주요 평가 지표는 다음과 같습니다.
+ALTER ROLE analytics_reader
+SET default_transaction_read_only = on;
 
-- SQL Execution Success Rate
-- SQL Accuracy
-- Analysis Result Accuracy
-- Retry Count
-- End-to-End Latency
-- Token Usage
-- LLM Cost
+ALTER ROLE analytics_reader
+SET statement_timeout = '10s';
+```
 
-Gold Query를 Ground Truth로 사용하여 Agent 구조 변경이 실제 분석 품질을 개선하는지 정량적으로 평가하는 것이 목표입니다.
+계정 비밀번호는 `\password analytics_reader`로 안전하게 설정하고, `.env`에 입력합니다.
 
----
+역할 생성이나 권한 부여에는 적절한 PostgreSQL 관리자 권한이 필요합니다. 테이블을 나중에 추가한다면 해당 테이블에도 조회 권한을 부여해야 합니다.
 
-## 13. Documentation
+### 8. Run Tests
 
-README에는 프로젝트의 전체 구조와 핵심 내용만 유지하고,
-세부적인 설계 및 실험 과정은 `docs/`에서 관리할 예정입니다.
+```powershell
+python -m pytest -q
+```
 
-| Document | Description |
-|---|---|
-| `docs/architecture.md` | 시스템 아키텍처 및 기술 선택 |
-| `docs/database.md` | 데이터 모델 및 데이터 품질 |
-| `docs/analytics.md` | KPI 정의 및 Gold Query |
-| `docs/agent-workflow.md` | LangGraph / Agent Workflow |
-| `docs/rag.md` | RAG 및 pgvector 설계 |
-| `docs/evaluation.md` | Single-Agent / Multi-Agent 평가 |
+### 9. Run Text-to-SQL Evaluation
+
+```powershell
+python -m scripts.evaluate_text_to_sql
+```
+
+### 10. Run SQL Recovery E2E
+
+```powershell
+python -m scripts.test_graph_recovery_e2e
+```
+
+LLM 관련 명령은 OpenAI API Key와 사용 가능한 API 크레딧이 필요합니다.
 
 ---
 
 ## 14. Roadmap
 
-```text
-Phase 1  Data Foundation
-         PostgreSQL / Schema / Ingestion / Gold Query
-                         ✅
+| Phase | Description                                           | Status      |
+| ----- | ----------------------------------------------------- | ----------- |
+| 1     | PostgreSQL, Schema, Olist Ingestion, Gold Query       | Completed   |
+| 2     | LangGraph, Metric Planner, Text-to-SQL                | Completed   |
+| 3     | SQL Validation, Read-only Executor, Recovery Tracking | Implemented |
+| 4     | SQL Safety Hardening, Evaluation Expansion            | Planned     |
+| 5     | RAG / pgvector / Python Analysis                      | Planned     |
+| 6     | Kafka Worker / Retry / DLQ                            | Planned     |
+| 7     | n8n / Slack / BI Integration                          | Planned     |
+| 8     | Single-Agent vs Multi-Agent Evaluation                | Planned     |
 
-Phase 2  Agent Workflow
-         LangGraph / Text-to-SQL / SQL Validation
-                         ↓
+### Immediate Priorities
 
-Phase 3  Context & Analysis
-         RAG / pgvector / Python Analysis
-                         ↓
+1. SQL 결과 행 수 제한 및 쿼리 안전성 강화
+2. SQL AST 기반 검증 개선
+3. 오류·복구 성공률 및 실행 비용 관측
+4. 다양한 자연어 질문에 대한 평가 확대
+5. RAG와 Python Analysis Agent 개발
 
-Phase 4  Data Platform
-         Kafka / Worker / Retry / DLQ
-                         ↓
+---
 
-Phase 5  Integration
-         FastAPI / n8n / Slack / BI
-                         ↓
+## 15. Evaluation Plan
 
-Phase 6  Evaluation
-         Single-Agent vs Multi-Agent
-```
+향후 동일한 분석 질문에 대해 Single-Agent와 Multi-Agent Workflow를 비교할 계획입니다.
+
+주요 평가 지표는 다음과 같습니다.
+
+- SQL Execution Success Rate
+- SQL Result Accuracy
+- Recovery Success Rate
+- Analysis Result Accuracy
+- End-to-End Latency
+- Retry Count
+- Token Usage
+- LLM API Cost
+
+현재 확보한 Gold Query 및 평가 체계를 활용하여 Agent 구조 변경에 따른 품질·비용 변화를 측정할 예정입니다.
 
 ---
 
 ## Project Status
 
-**Current Phase: Data Foundation → Agent Workflow**
+**Data Foundation: Completed**
 
-데이터베이스 구축과 분석 Ground Truth 검증을 완료했으며,
-현재 LangGraph 기반 Text-to-SQL Workflow 구현을 진행하고 있습니다.
+**LangGraph Text-to-SQL & SQL Recovery: Implemented and Tested**
+
+**Platform Integration / Advanced Analytics: Planned**
+
+현재는 자연어 질문에 대한 지표 계획, SQL 생성, 읽기 전용 실행, 결과 계약 검증, 제한된 SQL 자동 복구 및 복구 이력 추적까지 구현한 상태입니다.
+
+다음 단계에서는 SQL 실행 안전성과 평가 체계를 강화하고, RAG와 비동기 데이터 분석 플랫폼으로 확장할 예정입니다.
