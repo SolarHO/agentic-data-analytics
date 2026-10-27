@@ -18,3 +18,9 @@ data/raw/*.csv
 # IDE
 .vscode/
 .idea/
+
+# Database backups
+backups/
+
+# Regenerated document cache
+data/rag/schema_documents.json

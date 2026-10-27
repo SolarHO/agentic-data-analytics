@@ -6,7 +6,7 @@
 
 단순한 Text-to-SQL 구현을 넘어 **Metric-driven Analytics, SQL Validation, Read-only Execution, Error Recovery, Automated Evaluation**을 통해 분석의 정확성과 실행 안정성을 확보하는 것을 목표로 합니다.
 
-**Current Phase: Agentic Text-to-SQL Workflow 구현 완료 · 데이터 플랫폼 확장 진행 예정**
+**Current Phase: SQL Safety Hardening 완료 · Schema RAG 검색 계층 구현 및 평가 완료 · Hybrid Retrieval 개발 예정**
 
 ---
 
@@ -19,9 +19,13 @@ LLM을 활용하면 SQL 작성 과정을 자동화할 수 있지만, SQL이 정�
 이 프로젝트는 다음 문제를 해결하는 데 초점을 맞췄습니다.
 
 - **Metric Consistency:** 같은 비즈니스 지표를 일관된 기준으로 계산
+
 - **SQL Reliability:** 잘못된 테이블·컬럼 참조 및 SQL 실행 오류 처리
+
 - **Execution Safety:** LLM 생성 SQL을 제한된 데이터베이스 권한으로 실행
+
 - **Result Verification:** 요청한 지표와 실제 반환 컬럼의 일치 여부 확인
+
 - **Recovery & Traceability:** SQL 수정 과정과 최종 복구 상태 기록
 
 ### Example Questions
@@ -93,7 +97,7 @@ PostgreSQL / pgvector
       └── BI Dashboard
 ```
 
-> 위 구조는 목표 아키텍처입니다. 현재 구현된 범위는 PostgreSQL 기반 데이터 계층과 LangGraph Text-to-SQL 및 SQL Recovery Workflow입니다. Kafka, RAG, n8n, Slack 자동화 등은 아직 통합되지 않았습니다.
+> 위 구조는 목표 아키텍처입니다. 현재 구현된 범위는 PostgreSQL 기반 데이터 계층, LangGraph Text-to-SQL 및 SQL Recovery Workflow, 독립적인 pgvector Schema RAG 검색 계층입니다. RAG 검색 결과를 LangGraph에 주입하는 기능과 Kafka, n8n, Slack 자동화는 아직 통합되지 않았습니다.
 
 ---
 
@@ -102,52 +106,101 @@ PostgreSQL / pgvector
 ### Data & Backend Foundation
 
 - [x] Python 3.12 가상환경 및 프로젝트 구성
+
 - [x] FastAPI 기본 프로젝트 구조 및 DB 연결
+
 - [x] Docker 기반 PostgreSQL 16 구축
+
 - [x] Olist 데이터 프로파일링
+
 - [x] PK / FK 후보 및 데이터 관계 검증
+
 - [x] PostgreSQL Schema 설계
+
 - [x] Olist 데이터 적재 및 Row Count 검증
+
 - [x] Gold Query 6개 작성
+
 - [x] pytest 기반 데이터 검증
 
 ### Agentic Analytics
 
 - [x] LangGraph 기반 분석 Workflow
+
 - [x] Metric Registry / Dimension Registry
+
 - [x] Structured Metric Planner
+
 - [x] LLM 기반 SQL Generator
-- [x] SQL Validator 기본 구현
+
+- [x] sqlglot AST 기반 SQL Validator (단일 SELECT, 테이블·스키마·함수 검증)
+
 - [x] Read-only SQL Executor
+
 - [x] Output Contract Validator
+
 - [x] PostgreSQL SQLSTATE Error Classifier
+
 - [x] SQL Repair Agent
+
 - [x] 최대 1회 SQL 재생성 및 재검증
+
 - [x] Conditional Routing
+
 - [x] Recovery History / Recovery Finalizer
-- [ ] AST 기반 SQL Validator 강화
-- [ ] SQL 결과 행 수 및 실행 자원 제한 강화
-- [ ] RAG / pgvector
+
+- [x] AST 기반 SQL Validator 및 함수 Allowlist
+
+- [x] SQL 결과 최대 1,000행 제한 및 초과 감지
+
+- [x] pgvector 및 Schema RAG 검색 계층 구축
+
+- [x] RAG 문서 33개 생성·임베딩·저장
+
+- [x] 한국어 Context Retriever 및 검색 평가
+
+- [ ] 서버 측 실행 자원 제한 추가 강화
+
+- [ ] Metric Plan 기반 Hybrid Context Retriever
+
+- [ ] LangGraph SQL Generator에 검색 문맥 통합
+
 - [ ] Python Analysis Agent
+
 - [ ] Report Agent
 
 ### Platform Integration
 
 - [ ] Kafka Worker 및 비동기 요청 처리
+
 - [ ] Kafka Retry / DLQ
+
 - [ ] n8n Workflow
+
 - [ ] Slack Integration
+
 - [ ] BI Dashboard Integration
 
 ### Evaluation
 
 - [x] Gold Query Ground Truth 구축
+
 - [x] Single-row / Multi-row SQL 결과 비교
+
 - [x] Text-to-SQL Evaluation v2
+
 - [x] SQL Recovery 단위 테스트 및 통합 테스트
+
 - [x] 실제 LLM + PostgreSQL 복구 E2E 검증
+
+- [x] Gold Query 6개 AST 회귀 검증
+
+- [x] Retrieval 평가 5개 질문 (Hit@5, Recall@5, MRR@5, Required Coverage@5)
+
 - [ ] 반복 실행 및 질문 표현 변형 평가
+
 - [ ] Single-Agent vs Multi-Agent 비교
+
 - [ ] Latency / Token Usage / Cost 평가
 
 ---
@@ -156,17 +209,27 @@ PostgreSQL / pgvector
 
 프로젝트의 분석 데이터로 **Brazilian E-Commerce Public Dataset by Olist**를 사용합니다.
 
-| Dataset              | Description   |
+| Dataset              | Description   |
+
 | -------------------- | ------------- |
-| Customers            | 고객 정보         |
-| Orders               | 주문 정보 및 배송 상태 |
-| Order Items          | 주문별 상품 및 가격   |
-| Payments             | 주문 결제 정보      |
-| Reviews              | 리뷰 및 평점       |
-| Products             | 상품 및 카테고리     |
-| Sellers              | 판매자 정보        |
+
+| Customers            | 고객 정보         |
+
+| Orders               | 주문 정보 및 배송 상태 |
+
+| Order Items          | 주문별 상품 및 가격   |
+
+| Payments             | 주문 결제 정보      |
+
+| Reviews              | 리뷰 및 평점       |
+
+| Products             | 상품 및 카테고리     |
+
+| Sellers              | 판매자 정보        |
+
 | Category Translation | 상품 카테고리 영문 변환 |
-| Geolocation          | 우편번호 기반 위치 정보 |
+
+| Geolocation          | 우편번호 기반 위치 정보 |
 
 원본 CSV 파일은 저장소에 포함하지 않으며 로컬 `data/raw/` 경로에서 관리합니다.
 
@@ -223,18 +286,29 @@ portateis_cozinha_e_preparadores_de_alimentos
 
 Olist 9개 테이블의 적재 결과를 검증했습니다.
 
-| Table                |          Rows |
+| Table                |          Rows |
+
 | -------------------- | ------------: |
-| customers            |        99,441 |
-| category_translation |            71 |
-| products             |        32,951 |
-| sellers              |         3,095 |
-| orders               |        99,441 |
-| order_items          |       112,650 |
-| order_payments       |       103,886 |
-| order_reviews        |        99,224 |
-| geolocation          |     1,000,163 |
-| **Total**            | **1,550,922** |
+
+| customers            |        99,441 |
+
+| category_translation |            71 |
+
+| products             |        32,951 |
+
+| sellers              |         3,095 |
+
+| orders               |        99,441 |
+
+| order_items          |       112,650 |
+
+| order_payments       |       103,886 |
+
+| order_reviews        |        99,224 |
+
+| geolocation          |     1,000,163 |
+
+| **Total**            | **1,550,922** |
 
 ---
 
@@ -247,8 +321,11 @@ Olist 9개 테이블의 적재 결과를 검증했습니다.
 Metric Plan은 Pydantic Schema를 사용하며 다음 정보를 포함합니다.
 
 - Intent: `aggregation`, `comparison`, `trend`, `detail`
+
 - Metrics: Metric Registry에 정의된 정규 지표
+
 - Dimensions: `month`, `category`
+
 - Filters: 분석에 필요한 비즈니스 필터
 
 Metric Registry는 지표의 비즈니스 의미를 관리하고, SQL Generator가 해당 정의를 따르도록 유도합니다.
@@ -261,19 +338,26 @@ Metric Registry는 지표의 비즈니스 의미를 관리하고, SQL Generator�
 
 ### 7.3 SQL Validator
 
-LLM이 생성한 SQL이 기본 실행 조건을 만족하는지 확인합니다.
+`sqlglot` 기반 AST(Abstract Syntax Tree)로 LLM 생성 SQL의 구조를 검증합니다.
 
-현재는 `SELECT` 또는 `WITH` 기반 SQL 형태와 금지 키워드를 검사하는 기본 Validator를 사용합니다.
+- 단일 SELECT 문장만 허용하고 다중 SQL 문장과 DML/DDL을 차단
+- 허용된 Olist 테이블 및 `public` 스키마 검사
+- SQL 함수 Allowlist 검사
+- CTE, CAST, CASE WHEN, FILTER 등 정상 분석 구문 지원
+- 파싱 실패 및 정책 위반 SQL 실행 차단
 
-**현재 Validator는 완전한 SQL Parser 또는 보안 경계가 아닙니다.** 향후 AST 기반 검증, 다중 문장 차단, 허용 함수·테이블 제한 등을 강화할 계획입니다.
+현재 Validator는 완전한 SQL 보안 경계가 아닙니다. 읽기 전용 PostgreSQL 계정, 타임아웃, 결과 크기 제한을 함께 사용합니다.
 
 ### 7.4 Read-only SQL Executor
 
 LLM이 생성한 SQL은 데이터 적재용 계정이 아닌 별도 PostgreSQL 계정으로 실행합니다.
 
-| DB Account         | Usage                |
+| DB Account         | Usage                |
+
 | ------------------ | -------------------- |
-| `analytics_user`   | 데이터 적재 및 스키마 관리      |
+
+| `analytics_user`   | 데이터 적재 및 스키마 관리      |
+
 | `analytics_reader` | LLM 생성 SQL의 읽기 전용 실행 |
 
 분석 계정에는 다음 제약을 구성했습니다.
@@ -284,7 +368,7 @@ default_transaction_read_only = on
 statement_timeout = 10s
 ```
 
-SQL Executor는 SQLAlchemy의 별도 `read_engine`을 사용합니다.
+SQL Executor는 SQLAlchemy의 별도 `read_engine`을 사용합니다. 쿼리 결과는 최대 **1,000행**까지 반환하며, 초과 시 `result_limit_exceeded`를 보고하고 결과를 정상 집계로 취급하지 않습니다. 이 제한이 DB 서버의 실행 메모리·CPU 사용량 자체를 제한하는 것은 아닙니다.
 
 ### 7.5 Output Contract Validator
 
@@ -304,14 +388,21 @@ SQL이 성공적으로 실행되더라도 반환 결과가 요청한 지표와 �
 
 PostgreSQL 오류 코드를 기반으로 복구 가능한 오류를 분류합니다.
 
-| SQLSTATE | Error             | Recovery  |
+| SQLSTATE | Error             | Recovery  |
+
 | -------- | ----------------- | --------- |
-| `42601`  | Syntax Error      | Candidate |
-| `42703`  | Undefined Column  | Candidate |
-| `42P01`  | Undefined Table   | Candidate |
-| `42501`  | Permission Denied | Stop      |
-| `57014`  | Query Canceled    | Stop      |
-| Other    | Unknown           | Stop      |
+
+| `42601`  | Syntax Error      | Candidate |
+
+| `42703`  | Undefined Column  | Candidate |
+
+| `42P01`  | Undefined Table   | Candidate |
+
+| `42501`  | Permission Denied | Stop      |
+
+| `57014`  | Query Canceled    | Stop      |
+
+| Other    | Unknown           | Stop      |
 
 ### 8.2 SQL Repair Agent
 
@@ -355,11 +446,15 @@ SQL Executor
 
 Recovery Finalizer는 실행 결과와 Output Contract 검증 결과에 따라 상태를 확정합니다.
 
-| Status          | Meaning                 |
+| Status          | Meaning                 |
+
 | --------------- | ----------------------- |
-| `not_attempted` | SQL 복구 시도 없음            |
-| `recovered`     | 수정 SQL 실행 및 결과 계약 검증 성공 |
-| `failed`        | 복구 시도 후 검증 또는 실행 실패     |
+
+| `not_attempted` | SQL 복구 시도 없음            |
+
+| `recovered`     | 수정 SQL 실행 및 결과 계약 검증 성공 |
+
+| `failed`        | 복구 시도 후 검증 또는 실행 실패     |
 
 ### 8.4 End-to-End Recovery Example
 
@@ -398,7 +493,6 @@ Execution Error: None
 Contract Valid: True
 Result: [{'delivered_orders': 96478}]
 Recovery Status: recovered
-
 Graph Recovery E2E: PASS
 ```
 
@@ -412,27 +506,43 @@ LLM이 생성한 SQL의 실행 성공 여부만으로는 분석 정확성을 판
 
 따라서 사람이 검증한 Gold Query를 Ground Truth로 활용합니다.
 
-| Gold Query | Description          |
+| Gold Query | Description          |
+
 | ---------- | -------------------- |
-| GQ01       | 배송 완료 주문 수 및 매출 집계   |
-| GQ02       | Average Order Value  |
-| GQ03       | 월별 주문 수 및 상품 매출      |
-| GQ04       | 카테고리별 주문 수·상품 수 및 매출 |
-| GQ05       | 배송 지연율               |
-| GQ06       | 리뷰 집계 및 평균 점수        |
+
+| GQ01       | 배송 완료 주문 수 및 매출 집계   |
+
+| GQ02       | Average Order Value  |
+
+| GQ03       | 월별 주문 수 및 상품 매출      |
+
+| GQ04       | 카테고리별 주문 수·상품 수 및 매출 |
+
+| GQ05       | 배송 지연율               |
+
+| GQ06       | 리뷰 집계 및 평균 점수        |
 
 ### Reference Metrics
 
-| Metric               |        Result |
+| Metric               |        Result |
+
 | -------------------- | ------------: |
-| Delivered Orders     |        96,478 |
-| Sold Items           |       110,197 |
-| Product Revenue      | 13,221,498.11 |
-| Freight Value        |  2,198,275.64 |
-| Gross Item Value     | 15,419,773.75 |
-| Average Order Value  |        137.04 |
-| Delivery Delay Rate  |         8.11% |
-| Average Review Score |          4.09 |
+
+| Delivered Orders     |        96,478 |
+
+| Sold Items           |       110,197 |
+
+| Product Revenue      | 13,221,498.11 |
+
+| Freight Value        |  2,198,275.64 |
+
+| Gross Item Value     | 15,419,773.75 |
+
+| Average Order Value  |        137.04 |
+
+| Delivery Delay Rate  |         8.11% |
+
+| Average Review Score |          4.09 |
 
 Average Order Value는 개별 상품 가격의 평균이 아니라 배송 완료 주문별 상품 매출 합계의 평균입니다.
 
@@ -467,20 +577,34 @@ pytest를 통해 데이터베이스 지표, 결과 계약, 오류 분류, 조건
 최근 로컬 검증 결과:
 
 ```text
-45 passed in 1.52s
+82 passed in 1.73s
 ```
 
 포함되는 주요 테스트:
 
 - Gold Query 기준값 검증
+
 - 다중 행 결과 비교
+
 - Output Contract Validation
+
 - SQLSTATE 오류 분류
+
 - SQL Validation 조건부 분기
+
 - SQL Recovery 재시도 및 종료 경로
+
 - SQL Repair Agent Mock 테스트
+
 - Recovery Finalizer 상태 검증
+
 - LangGraph 복구 통합 테스트
+
+- SQL Executor 결과 행 수 경계값 테스트
+
+- AST SQL Validator 및 Gold Query 6개 정적 검증
+
+- RAG Document Builder 테스트
 
 전체 테스트:
 
@@ -501,22 +625,39 @@ E2E 스크립트는 실제 OpenAI API를 호출하므로 별도의 비용이 발
 
 ## 11. Tech Stack
 
-| Area                | Technology                               |
+| Area                | Technology                               |
+
 | ------------------- | ---------------------------------------- |
-| Language            | Python 3.12                              |
-| Database            | PostgreSQL 16                            |
-| Database Access     | SQLAlchemy, psycopg                      |
-| Container           | Docker / Docker Compose                  |
-| Agent Workflow      | LangGraph                                |
-| LLM                 | OpenAI GPT-5 mini                        |
-| LLM Integration     | LangChain                                |
-| Validation          | Pydantic, pytest                         |
-| API Foundation      | FastAPI                                  |
-| Data Processing     | Pandas                                   |
-| Vector Database     | pgvector (Planned)                       |
-| Messaging           | Apache Kafka (Planned)                   |
-| Workflow Automation | n8n (Planned)                            |
-| BI                  | Tableau / Power BI (Planned Integration) |
+
+| Language            | Python 3.12                              |
+
+| Database            | PostgreSQL 16                            |
+
+| Database Access     | SQLAlchemy, psycopg                      |
+
+| Container           | Docker / Docker Compose                  |
+
+| Agent Workflow      | LangGraph                                |
+
+| LLM                 | OpenAI GPT-5 mini                        |
+
+| LLM Integration     | LangChain                                |
+
+| Validation          | Pydantic, pytest                         |
+
+| API Foundation      | FastAPI                                  |
+
+| Data Processing     | Pandas                                   |
+
+| Vector Database     | pgvector 0.8.7 (Implemented) |
+| Embeddings          | Sentence Transformers (Multilingual MiniLM, 384 dimensions) |
+| SQL Parser          | sqlglot (AST validation) |
+
+| Messaging           | Apache Kafka (Planned)                   |
+
+| Workflow Automation | n8n (Planned)                            |
+
+| BI                  | Tableau / Power BI (Planned Integration) |
 
 ---
 
@@ -604,7 +745,7 @@ cd agentic-data-analytics
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.\\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 ```
 
@@ -612,7 +753,7 @@ PowerShell 실행 정책으로 활성화가 차단된다면 현재 세션에서 
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
+.\\.venv\Scripts\Activate.ps1
 ```
 
 ### 3. Configure Environment
@@ -631,10 +772,8 @@ DB_PORT=5432
 DB_NAME=analytics
 DB_USER=analytics_user
 DB_PASSWORD=your_db_password
-
 DB_READ_USER=analytics_reader
 DB_READ_PASSWORD=your_reader_password
-
 OPENAI_API_KEY=your_openai_api_key
 ```
 
@@ -679,14 +818,11 @@ PostgreSQL 세션에서 관리자 권한을 가진 적절한 계정으로 다음
 
 ```sql
 CREATE ROLE analytics_reader LOGIN;
-
 GRANT CONNECT ON DATABASE analytics TO analytics_reader;
 GRANT USAGE ON SCHEMA public TO analytics_reader;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO analytics_reader;
-
 ALTER ROLE analytics_reader
 SET default_transaction_read_only = on;
-
 ALTER ROLE analytics_reader
 SET statement_timeout = '10s';
 ```
@@ -694,6 +830,21 @@ SET statement_timeout = '10s';
 계정 비밀번호는 `\password analytics_reader`로 안전하게 설정하고, `.env`에 입력합니다.
 
 역할 생성이나 권한 부여에는 적절한 PostgreSQL 관리자 권한이 필요합니다. 테이블을 나중에 추가한다면 해당 테이블에도 조회 권한을 부여해야 합니다.
+
+### RAG schema and documents
+
+PostgreSQL 16과 pgvector 0.8.7 이미지가 필요합니다. 새 환경에서는 먼저 `vector` 확장을 활성화하고 RAG 스키마를 생성합니다. 읽기 전용 분석 계정에는 새 테이블의 SELECT 권한을 별도로 부여합니다.
+
+```powershell
+Get-Content sql\rag_schema.sql | docker exec -i analytics-postgres psql -v ON_ERROR_STOP=1 -U analytics_user -d analytics
+docker exec analytics-postgres psql -U analytics_user -d analytics -c "GRANT SELECT ON public.rag_documents TO analytics_reader;"
+python -m app.rag.document_builder
+python -m scripts.embed_rag_documents
+python -m scripts.test_rag_retrieval
+python -m scripts.evaluate_rag_retrieval
+```
+
+임베딩 모델은 최초 실행 시 다운로드되며, RAG 관련 파일 `data/rag/schema_documents.json`은 소스 Registry로부터 재생성 가능합니다.
 
 ### 8. Run Tests
 
@@ -717,26 +868,195 @@ LLM 관련 명령은 OpenAI API Key와 사용 가능한 API 크레딧이 필요�
 
 ---
 
+## Schema RAG & Vector Retrieval
+
+### Overview
+
+기존 Text-to-SQL 시스템은 `DATABASE_SCHEMA`, `BUSINESS_RULES`, `METRIC_REGISTRY`, `DIMENSION_REGISTRY`를 SQL Generator에 직접 제공하는 방식으로 구현했습니다.
+
+현재는 이 구조를 확장하기 위해 PostgreSQL과 pgvector 기반의 **Schema RAG 검색 계층**을 구축했습니다.
+
+RAG 도입 목적은 모든 스키마와 비즈니스 규칙을 항상 전달하는 방식에서 벗어나, 자연어 질문과 관련된 문맥을 선택적으로 검색하고 제공하는 것입니다.
+
+**현재 구현 범위는 문서 생성, 임베딩, 벡터 저장, 검색 및 검색 품질 평가까지입니다.** 검색된 문맥을 LangGraph SQL Generator에 직접 주입하는 기능은 아직 구현하지 않았습니다.
+
+### Architecture
+
+```text
+Database Schema / Business Rules / Registries
+                    │
+                    ▼
+           Document Builder
+                    │
+                    ▼
+             33 Documents
+                    │
+                    ▼
+    Multilingual Sentence Transformer
+                    │
+                    ▼
+          384-dim Embeddings
+                    │
+                    ▼
+        PostgreSQL 16 + pgvector
+                    │
+                    ▼
+           Context Retriever
+                    │
+                    ▼
+           Top-K Documents
+                    │
+                    ▼
+          Retrieval Evaluation
+Next: Metric Plan + Vector Search
+      → Hybrid Context Retriever
+      → LangGraph SQL Generator
+```
+
+### Document Builder
+
+`app/rag/document_builder.py`는 기존 Registry 및 Context 정의를 활용해 검색용 문서를 생성합니다.
+
+| Document Type | Count |
+
+|---|---:|
+
+| Schema | 9 |
+
+| Business Rule | 7 |
+
+| Metric | 13 |
+
+| Dimension | 2 |
+
+| General Context | 2 |
+
+| **Total** | **33** |
+
+각 문서는 고유 `document_id`, 문서 유형, 이름 및 내용을 포함합니다.
+
+```powershell
+python -m app.rag.document_builder
+```
+
+생성 결과는 `data/rag/schema_documents.json`에 저장됩니다.
+
+### Embedding & Vector Storage
+
+| Component | Technology |
+
+|---|---|
+
+| Database | PostgreSQL 16 |
+
+| Vector Extension | pgvector 0.8.7 |
+
+| Embedding Model | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` |
+
+| Embedding Dimension | 384 |
+
+| Vector Distance | Cosine distance |
+
+| Initial Documents | 33 |
+
+한국어 자연어 질문과 영어 중심의 스키마 문서 간 검색을 위해 다국어 임베딩 모델을 사용합니다.
+
+문서 적재는 `document_id` 기준 Upsert 방식이며, 기존 문서를 중복 생성하지 않고 갱신할 수 있습니다.
+
+```powershell
+python -m scripts.embed_rag_documents
+```
+
+### Context Retriever
+
+`app/rag/retriever.py`는 질문을 임베딩하고, pgvector 코사인 거리 연산자 `<=>`를 사용해 관련 문서를 검색합니다.
+
+주요 특징:
+
+- 한국어 자연어 질문 입력
+
+- Top-K 벡터 유사도 검색
+
+- 임베딩 모델 캐싱
+
+- `analytics_reader` 계정을 사용한 읽기 전용 검색
+
+- 관련 문서와 유사도 점수 반환
+
+```powershell
+python -m scripts.test_rag_retrieval
+```
+
+### Baseline Retrieval Evaluation
+
+한국어 분석 질문 5개에 대해 Top-5 검색 품질을 평가했습니다.
+
+| Metric | Result |
+
+|---|---:|
+
+| Questions | 5 |
+
+| Hit@5 | 100.00% |
+
+| Mean Recall@5 | 49.00% |
+
+| MRR@5 | 0.767 |
+
+| Required Coverage@5 | 0.00% |
+
+```powershell
+python -m scripts.evaluate_rag_retrieval
+```
+
+**Key Finding:** 모든 질문에서 관련 문서를 하나 이상 검색했지만, SQL 생성에 필요한 필수 테이블·차원 문서를 전부 확보한 질문은 없었습니다.
+
+특히 카테고리별 매출과 월별 매출 질문에서는 지표 문서가 상위에 집중되고 `dimension:category`, `dimension:month`, 일부 테이블 스키마 문서가 누락되었습니다.
+
+이는 Vector Search 결과만 SQL Generator에 전달하면 중요한 JOIN 관계나 그룹화 정의를 누락할 수 있음을 보여줍니다.
+
+위 수치는 5개 질문에 대한 초기 평가 결과이며 일반적인 검색 정확도를 대표하지 않습니다.
+
+### Next: Hybrid Context Retrieval
+
+다음 단계에서는 구조화된 Metric Plan으로 필수 지표·차원·테이블 문서를 선택하고, 벡터 검색 결과와 병합하는 방식을 구현할 계획입니다.
+
+```text
+Metric Plan ──────── Required Documents
+                          │
+Question ── Vector Search │
+                 │        │
+                 └───┬────┘
+                     ▼
+             Context Merge
+                     ▼
+               SQL Generator
+```
+
+구현 이후 순수 Vector Retrieval과 Hybrid Retrieval을 동일한 평가 질문으로 비교하고, 최종적으로 Baseline Text-to-SQL과 RAG 기반 Text-to-SQL의 정확도·지연시간·토큰 비용을 비교할 예정입니다.
+
+---
+
 ## 14. Roadmap
 
-| Phase | Description                                           | Status      |
-| ----- | ----------------------------------------------------- | ----------- |
-| 1     | PostgreSQL, Schema, Olist Ingestion, Gold Query       | Completed   |
-| 2     | LangGraph, Metric Planner, Text-to-SQL                | Completed   |
-| 3     | SQL Validation, Read-only Executor, Recovery Tracking | Implemented |
-| 4     | SQL Safety Hardening, Evaluation Expansion            | Planned     |
-| 5     | RAG / pgvector / Python Analysis                      | Planned     |
-| 6     | Kafka Worker / Retry / DLQ                            | Planned     |
-| 7     | n8n / Slack / BI Integration                          | Planned     |
-| 8     | Single-Agent vs Multi-Agent Evaluation                | Planned     |
+| Phase | Description | Status |
+|---|---|---|
+| 1 | PostgreSQL, Olist Ingestion, Gold Queries | Completed |
+| 2 | LangGraph Metric Planner, Text-to-SQL, Recovery | Completed |
+| 3 | AST SQL Validation, Result Row Limit, Evaluation | Implemented and Tested |
+| 4 | pgvector, Document Builder, Multilingual Embeddings, Vector Retriever | Implemented and Evaluated |
+| 5 | Metric Plan-based Hybrid Retrieval, LangGraph RAG Integration | Planned |
+| 6 | Python Analysis Agent, Reporting, Broader Evaluation | Planned |
+| 7 | Kafka Worker, Retry / DLQ | Planned |
+| 8 | n8n, Slack, BI, Single-Agent vs Multi-Agent Benchmark | Planned |
 
 ### Immediate Priorities
 
-1. SQL 결과 행 수 제한 및 쿼리 안전성 강화
-2. SQL AST 기반 검증 개선
-3. 오류·복구 성공률 및 실행 비용 관측
-4. 다양한 자연어 질문에 대한 평가 확대
-5. RAG와 Python Analysis Agent 개발
+1. 필수 테이블·차원 문서 누락을 해결하기 위한 Hybrid Context Retriever 구현
+2. Metric Plan과 RAG 검색 결과의 연동 및 LangGraph SQL Generator 통합
+3. Baseline Text-to-SQL 대비 정확도·지연시간·토큰 비용 평가
+4. 서버 측 SQL 실행 안전성 및 관측 기능 추가 강화
+5. Python Analysis Agent 및 비동기 플랫폼 통합
 
 ---
 
@@ -747,12 +1067,19 @@ LLM 관련 명령은 OpenAI API Key와 사용 가능한 API 크레딧이 필요�
 주요 평가 지표는 다음과 같습니다.
 
 - SQL Execution Success Rate
+
 - SQL Result Accuracy
+
 - Recovery Success Rate
+
 - Analysis Result Accuracy
+
 - End-to-End Latency
+
 - Retry Count
+
 - Token Usage
+
 - LLM API Cost
 
 현재 확보한 Gold Query 및 평가 체계를 활용하여 Agent 구조 변경에 따른 품질·비용 변화를 측정할 예정입니다.
@@ -763,10 +1090,10 @@ LLM 관련 명령은 OpenAI API Key와 사용 가능한 API 크레딧이 필요�
 
 **Data Foundation: Completed**
 
-**LangGraph Text-to-SQL & SQL Recovery: Implemented and Tested**
+**LangGraph Text-to-SQL, SQL Recovery, AST SQL Safety: Implemented and Tested**
 
-**Platform Integration / Advanced Analytics: Planned**
+**Standalone Schema RAG (pgvector / 33 Documents / Vector Retriever): Implemented and Evaluated**
 
-현재는 자연어 질문에 대한 지표 계획, SQL 생성, 읽기 전용 실행, 결과 계약 검증, 제한된 SQL 자동 복구 및 복구 이력 추적까지 구현한 상태입니다.
+**Hybrid Retrieval / LangGraph RAG Integration / Kafka / n8n / Slack: Planned**
 
-다음 단계에서는 SQL 실행 안전성과 평가 체계를 강화하고, RAG와 비동기 데이터 분석 플랫폼으로 확장할 예정입니다.
+기존 자연어 분석 Workflow의 SQL 생성·검증·실행·복구 기능은 유지되고 있습니다. 독립적인 Schema RAG 검색 계층까지 구축했지만, **검색 문맥은 아직 실제 SQL Generator의 프롬프트에 주입되지 않습니다.** 현재 5개 질문의 Top-5 검색 평가에서는 Hit@5 100%, Mean Recall@5 49%, MRR@5 0.767, Required Coverage@5 0%로, 필수 테이블·차원 검색 개선이 다음 핵심 과제입니다.
