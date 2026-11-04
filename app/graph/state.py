@@ -1,5 +1,5 @@
 from typing import Any, TypedDict, NotRequired
-
+from typing import Literal
 from app.graph.metric_plan import MetricPlan
 
 
@@ -26,3 +26,5 @@ class AnalysisState(TypedDict, total=False):
 
     sql_recovery_history: list[dict]
     recovery_status: NotRequired[str]
+
+    context_mode: Literal["full", "registry", "hybrid"]

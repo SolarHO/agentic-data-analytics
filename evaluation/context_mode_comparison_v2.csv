@@ -1,0 +1,200 @@
+﻿case_id,mode,status,prompt_chars,input_tokens,output_tokens,retrieval_seconds,llm_seconds,total_seconds,error,generated_sql
+GQ01,full,PASS,5968,1333,1237,0.00013310000213095918,13.676459199996316,13.799944200000027,,"WITH delivered_orders AS (
+  SELECT order_id
+  FROM orders
+  WHERE order_status = 'delivered'
+)
+SELECT
+  (SELECT COUNT(*) FROM delivered_orders) AS delivered_orders,
+  COALESCE(COUNT(oi.order_item_id), 0) AS sold_items,
+  COALESCE(SUM(oi.price), 0) AS product_revenue,
+  COALESCE(SUM(oi.freight_value), 0) AS freight_revenue,
+  COALESCE(SUM(oi.price + oi.freight_value), 0) AS gross_item_value
+FROM delivered_orders d
+LEFT JOIN order_items oi
+  ON oi.order_id = d.order_id;"
+GQ01,registry,PASS,4277,959,681,0.011312800001178402,7.402779700001702,7.506622900000366,,"SELECT
+  COUNT(DISTINCT o.order_id) AS delivered_orders,
+  COUNT(oi.order_item_id) AS sold_items,
+  SUM(oi.price) AS product_revenue,
+  SUM(oi.freight_value) AS freight_revenue,
+  SUM(oi.price + oi.freight_value) AS gross_item_value
+FROM orders o
+JOIN order_items oi
+  ON o.order_id = oi.order_id
+WHERE o.order_status = 'delivered';"
+GQ01,hybrid,PASS,4421,987,965,1.84232420000626,8.084318000001076,10.022847999993246,,"SELECT
+  COUNT(DISTINCT o.order_id) AS delivered_orders,
+  COUNT(oi.order_item_id) AS sold_items,
+  SUM(COALESCE(oi.price, 0)) AS product_revenue,
+  SUM(COALESCE(oi.freight_value, 0)) AS freight_revenue,
+  SUM(COALESCE(oi.price, 0) + COALESCE(oi.freight_value, 0)) AS gross_item_value
+FROM orders o
+JOIN order_items oi
+  ON o.order_id = oi.order_id
+WHERE o.order_status = 'delivered';"
+GQ02,full,PASS,5472,1195,538,7.589999586343765e-05,5.018540699995356,5.131523399999423,,"WITH order_revenue AS (
+  SELECT
+    o.order_id,
+    SUM(oi.price) AS order_revenue
+  FROM orders o
+  JOIN order_items oi ON o.order_id = oi.order_id
+  WHERE o.order_status = 'delivered'
+  GROUP BY o.order_id
+)
+SELECT
+  AVG(order_revenue)::numeric AS average_order_value
+FROM order_revenue;"
+GQ02,registry,PASS,3138,675,530,0.010979399994539563,4.905156199994963,5.026760499997181,,"SELECT AVG(order_total) AS average_order_value
+FROM (
+  SELECT
+    oi.order_id,
+    SUM(oi.price) AS order_total
+  FROM order_items oi
+  JOIN orders o ON oi.order_id = o.order_id
+  WHERE o.order_delivered_customer_date IS NOT NULL
+  GROUP BY oi.order_id
+) order_totals;"
+GQ02,hybrid,PASS,3503,755,473,0.06109169999399455,4.160621700000775,4.323726899994654,,"WITH order_revenues AS (
+  SELECT
+    oi.order_id,
+    SUM(oi.price) AS order_revenue
+  FROM order_items oi
+  JOIN orders o ON oi.order_id = o.order_id
+  WHERE o.order_delivered_customer_date IS NOT NULL
+  GROUP BY oi.order_id
+)
+SELECT AVG(order_revenue) AS average_order_value
+FROM order_revenues;"
+GQ03,full,PASS,5622,1247,468,8.179999713320285e-05,4.798699299994041,4.962584799999604,,"SELECT
+  DATE_TRUNC('month', orders.order_purchase_timestamp)::date AS month,
+  COUNT(DISTINCT orders.order_id) AS delivered_orders,
+  SUM(order_items.price) AS product_revenue
+FROM orders
+JOIN order_items ON orders.order_id = order_items.order_id
+WHERE orders.order_status = 'delivered'
+GROUP BY month
+ORDER BY month;"
+GQ03,registry,PASS,3517,778,726,0.019458199996734038,6.230734000004304,6.414789700000256,,"SELECT
+  DATE_TRUNC('month', orders.order_purchase_timestamp)::date AS month,
+  COUNT(DISTINCT orders.order_id) AS delivered_orders,
+  SUM(order_items.price) AS product_revenue
+FROM orders
+JOIN order_items
+  ON orders.order_id = order_items.order_id
+WHERE orders.order_status = 'delivered'
+GROUP BY month
+ORDER BY month;"
+GQ03,hybrid,PASS,4328,949,662,0.06807529999787221,6.043939200004388,6.273147799998696,,"SELECT
+  DATE_TRUNC('month', orders.order_purchase_timestamp)::date AS month,
+  COUNT(DISTINCT orders.order_id) AS delivered_orders,
+  SUM(order_items.price) AS product_revenue
+FROM orders
+JOIN order_items
+  ON orders.order_id = order_items.order_id
+WHERE orders.order_status = 'delivered'
+GROUP BY month
+ORDER BY month;"
+GQ04,full,PASS,5742,1280,1230,7.919999916339293e-05,10.251512900002126,10.475988599995617,,"SELECT
+  COALESCE(ct.product_category_name_english, p.product_category_name, 'unknown') AS category,
+  COUNT(DISTINCT o.order_id) AS delivered_orders,
+  COUNT(*) AS sold_items,
+  SUM(oi.price) AS product_revenue
+FROM order_items oi
+JOIN orders o ON oi.order_id = o.order_id
+JOIN products p ON oi.product_id = p.product_id
+LEFT JOIN category_translation ct ON p.product_category_name = ct.product_category_name
+WHERE o.order_status = 'delivered'
+GROUP BY COALESCE(ct.product_category_name_english, p.product_category_name, 'unknown')
+ORDER BY category;"
+GQ04,registry,PASS,4621,1018,1104,0.011255999997956678,8.851320600006147,9.057988699998532,,"SELECT
+  COALESCE(ct.product_category_name_english, p.product_category_name, 'unknown') AS category,
+  COUNT(DISTINCT o.order_id) AS delivered_orders,
+  COUNT(oi.order_item_id) AS sold_items,
+  SUM(oi.price) AS product_revenue
+FROM order_items oi
+JOIN orders o ON oi.order_id = o.order_id
+JOIN products p ON oi.product_id = p.product_id
+LEFT JOIN category_translation ct ON p.product_category_name = ct.product_category_name
+WHERE o.order_status = 'delivered'
+GROUP BY COALESCE(ct.product_category_name_english, p.product_category_name, 'unknown');"
+GQ04,hybrid,PASS,4881,1072,1034,0.07198900000366848,7.990042199999152,8.286378500000865,,"SELECT
+  COALESCE(ct.product_category_name_english, p.product_category_name, 'unknown') AS category,
+  COUNT(DISTINCT o.order_id) AS delivered_orders,
+  COUNT(*) AS sold_items,
+  SUM(oi.price) AS product_revenue
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.order_id
+JOIN products p ON p.product_id = oi.product_id
+LEFT JOIN category_translation ct ON ct.product_category_name = p.product_category_name
+WHERE o.order_status = 'delivered'
+GROUP BY COALESCE(ct.product_category_name_english, p.product_category_name, 'unknown');"
+GQ05,full,PASS,5851,1298,525,8.13999940874055e-05,5.3539420000015525,5.366362499997194,,"WITH delivered AS (
+  SELECT
+    COUNT(*) AS delivered_orders_with_delivery_date,
+    COUNT(*) FILTER (WHERE order_delivered_customer_date > order_estimated_delivery_date) AS delayed_orders
+  FROM orders
+  WHERE order_status = 'delivered'
+    AND order_delivered_customer_date IS NOT NULL
+)
+SELECT
+  delivered_orders_with_delivery_date,
+  delayed_orders,
+  ROUND(
+    CASE WHEN delivered_orders_with_delivery_date = 0 THEN 0
+         ELSE (delayed_orders::numeric / delivered_orders_with_delivery_date::numeric) * 100
+    END
+  , 2) AS delay_rate_pct
+FROM delivered;"
+GQ05,registry,PASS,3699,800,807,0.02581080000527436,8.58938930000295,8.628729700001713,,"WITH metrics AS (
+  SELECT
+    COUNT(*) FILTER (
+      WHERE order_status = 'delivered'
+        AND order_delivered_customer_date IS NOT NULL
+    ) AS delivered_orders_with_delivery_date,
+    COUNT(*) FILTER (
+      WHERE order_status = 'delivered'
+        AND order_delivered_customer_date IS NOT NULL
+        AND order_delivered_customer_date > order_estimated_delivery_date
+    ) AS delayed_orders
+  FROM orders
+)
+SELECT
+  delivered_orders_with_delivery_date,
+  delayed_orders,
+  CASE
+    WHEN delivered_orders_with_delivery_date = 0 THEN 0.00
+    ELSE ROUND((delayed_orders::numeric / delivered_orders_with_delivery_date::numeric) * 100, 2)
+  END AS delay_rate_pct
+FROM metrics;"
+GQ05,hybrid,PASS,3812,826,1025,0.04168550000031246,11.098600299999816,11.153479900000093,,"SELECT
+  COUNT(*) AS delivered_orders_with_delivery_date,
+  COUNT(*) FILTER (WHERE order_delivered_customer_date > order_estimated_delivery_date) AS delayed_orders,
+  CASE
+    WHEN COUNT(*) = 0 THEN 0.00
+    ELSE ROUND(
+      (COUNT(*) FILTER (WHERE order_delivered_customer_date > order_estimated_delivery_date)::numeric
+       / COUNT(*)::numeric) * 100
+    , 2)
+  END AS delay_rate_pct
+FROM orders
+WHERE order_status = 'delivered'
+  AND order_delivered_customer_date IS NOT NULL;"
+GQ06,full,PASS,5733,1281,453,6.770000618416816e-05,6.501335400003882,6.513043700004346,,"SELECT
+  COUNT(*) AS reviews,
+  AVG(order_reviews.review_score) AS avg_review_score,
+  COUNT(*) FILTER (WHERE order_reviews.review_score <= 2) AS negative_reviews,
+  COUNT(*) FILTER (WHERE order_reviews.review_score >= 4) AS positive_reviews
+FROM order_reviews;"
+GQ06,registry,PASS,3275,741,459,0.030404300006921403,5.4901583999962895,5.531388600000355,,"SELECT
+  COUNT(*) AS reviews,
+  AVG(review_score) AS avg_review_score,
+  SUM(CASE WHEN review_score <= 2 THEN 1 ELSE 0 END) AS negative_reviews,
+  SUM(CASE WHEN review_score >= 4 THEN 1 ELSE 0 END) AS positive_reviews
+FROM order_reviews;"
+GQ06,hybrid,PASS,3275,741,459,0.07038119999924675,4.135371299998951,4.216698099997302,,"SELECT
+  COUNT(*) AS reviews,
+  AVG(review_score) AS avg_review_score,
+  SUM(CASE WHEN review_score <= 2 THEN 1 ELSE 0 END) AS negative_reviews,
+  SUM(CASE WHEN review_score >= 4 THEN 1 ELSE 0 END) AS positive_reviews
+FROM order_reviews;"

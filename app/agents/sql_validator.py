@@ -23,6 +23,7 @@ ALLOWED_FUNCTIONS = {
     "sum",
     "avg",
     "coalesce",
+    "nullif",
     "timestamp_trunc",
     "round",
     "min",

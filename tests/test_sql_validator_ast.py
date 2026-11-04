@@ -115,7 +115,36 @@ from app.agents.sql_validator import validate_sql
         ),
     ],
 )
+
+
 def test_ast_sql_validation(sql, expected_valid):
     result = validate_sql({"sql": sql})
 
     assert result["sql_valid"] is expected_valid
+
+
+def test_nullif_is_allowed():
+    sql = """
+    SELECT
+        ROUND(
+            COUNT(*)::numeric
+            / NULLIF(COUNT(*), 0),
+            2
+        ) AS delay_rate_pct
+    FROM orders
+    """
+
+    result = validate_sql({"sql": sql})
+
+    assert result["sql_valid"] is True
+    assert result["validation_error"] is None
+
+
+def test_unsafe_function_still_rejected():
+    sql = """
+    SELECT pg_sleep(1)
+    """
+
+    result = validate_sql({"sql": sql})
+
+    assert result["sql_valid"] is False
