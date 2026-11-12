@@ -51,4 +51,45 @@ METRIC_REGISTRY = {
         "description": "Number of reviews with score 4 or 5.",
         "unit": "count",
     },
+    "delivered_orders_with_delivery_date": {
+        "description": (
+            "Number of delivered orders with a non-null "
+            "actual delivery date."
+        ),
+        "unit": "count",
+        "required_population": [
+            "orders.order_status = 'delivered'",
+            "orders.order_delivered_customer_date IS NOT NULL",
+        ],
+    },
+    "delayed_orders": {
+        "description": (
+            "Number of delivered orders with an actual "
+            "delivery date later than the estimated date."
+        ),
+        "unit": "count",
+        "required_population": [
+            "orders.order_status = 'delivered'",
+            "orders.order_delivered_customer_date IS NOT NULL",
+        ],
+        "calculation_condition": (
+            "orders.order_delivered_customer_date "
+            "> orders.order_estimated_delivery_date"
+        ),
+    },
+    "delay_rate_pct": {
+        "description": (
+            "Percentage of delivered orders with actual "
+            "delivery dates that were delayed."
+        ),
+        "unit": "percent",
+        "required_population": [
+            "orders.order_status = 'delivered'",
+            "orders.order_delivered_customer_date IS NOT NULL",
+        ],
+        "formula": (
+            "100 * delayed_orders / "
+            "delivered_orders_with_delivery_date"
+        ),
+    },
 }

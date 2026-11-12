@@ -103,7 +103,10 @@ Business metric definitions:
 - Do NOT calculate AVG(order_items.price).
 
 5. Delivery Delay
-- Evaluate delivered orders with a non-null order_delivered_customer_date.
+- Mandatory population:
+  order_status = 'delivered'
+  AND order_delivered_customer_date IS NOT NULL.
+- Evaluate only orders satisfying the mandatory population.
 - An order is delayed when:
   order_delivered_customer_date > order_estimated_delivery_date.
 - Delivery delay rate is expressed as a percentage, not a decimal ratio.

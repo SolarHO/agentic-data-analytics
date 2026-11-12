@@ -5,29 +5,62 @@ from app.graph.state import AnalysisState
 from app.graph.analysis_graph import (
     route_after_sql_validation,
     route_after_sql_execution,
+    route_after_semantic_validation,
 )
 from app.agents.sql_validator import validate_sql
+
+
+def mock_semantic_validator(state: AnalysisState) -> dict:
+    """
+    Test double for semantic validation.
+
+    These legacy tests focus on AST routing,
+    SQL execution, and recovery behavior.
+    Semantic policy correctness is tested separately.
+    """
+
+    return {
+        "semantic_status": "VALID",
+        "semantic_error": None,
+    }
+
 
 
 def build_recovery_test_graph(executor, repair, contract):
     builder = StateGraph(AnalysisState)
 
     builder.add_node("sql_validator", validate_sql)
+    builder.add_node(
+        "sql_semantic_validator",
+        mock_semantic_validator,
+    )
     builder.add_node("sql_executor", executor)
     builder.add_node("sql_repair", repair)
     builder.add_node("output_contract_validator", contract)
 
     builder.add_edge(START, "sql_validator")
 
+    # AST validation
     builder.add_conditional_edges(
         "sql_validator",
         route_after_sql_validation,
+        {
+            "semantic": "sql_semantic_validator",
+            "stop": END,
+        },
+    )
+
+    # Semantic validation
+    builder.add_conditional_edges(
+        "sql_semantic_validator",
+        route_after_semantic_validation,
         {
             "execute": "sql_executor",
             "stop": END,
         },
     )
 
+    # SQL execution and retry decision
     builder.add_conditional_edges(
         "sql_executor",
         route_after_sql_execution,
@@ -38,10 +71,12 @@ def build_recovery_test_graph(executor, repair, contract):
         },
     )
 
+    # Repair loop
     builder.add_edge("sql_repair", "sql_validator")
     builder.add_edge("output_contract_validator", END)
 
     return builder.compile()
+
 
 
 def test_recoverable_error_repairs_once():

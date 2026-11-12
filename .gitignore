@@ -24,3 +24,15 @@ backups/
 
 # Regenerated document cache
 data/rag/schema_documents.json
+
+# Local evaluation results
+evaluation/*.csv
+evaluation/*.jsonl
+
+# Local test and coverage reports
+.coverage
+htmlcov/
+
+# OS temporary files
+.DS_Store
+Thumbs.db

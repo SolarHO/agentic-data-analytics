@@ -57,6 +57,12 @@ SQL GENERATION RULES
 - Group results by the selected dimensions.
 - For the month dimension, use the calendar month of orders.order_purchase_timestamp.
 - For the category dimension, preserve untranslated and null categories using the registry definition.
+- Metric definitions may contain Mandatory population filters.
+- Apply every mandatory population filter when calculating its metric.
+- Mandatory population filters are part of the metric definition, not optional user filters.
+- A user's additional filters must not remove mandatory population conditions.
+- Apply numerator calculation conditions only to the relevant numerator, not to the denominator.
+- Preserve the correct aggregation grain when calculating metrics.
 """
 
 

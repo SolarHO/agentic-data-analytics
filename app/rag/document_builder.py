@@ -58,18 +58,46 @@ def build_rag_documents() -> list[dict]:
             ),
         })
 
+    
     # 3. Metric registry documents
     for name, definition in METRIC_REGISTRY.items():
+        lines = [
+            f"Metric: {name}",
+            f"Description: {definition['description']}",
+            f"Unit: {definition['unit']}",
+        ]
+
+        population = definition.get("required_population")
+        if population:
+            lines.append(
+                "Mandatory population filters "
+                "(apply all conditions):"
+            )
+            lines.extend(
+                f"- {condition}"
+                for condition in population
+            )
+
+        calculation_condition = definition.get(
+            "calculation_condition"
+        )
+        if calculation_condition:
+            lines.append(
+                "Calculation condition: "
+                f"{calculation_condition}"
+            )
+
+        formula = definition.get("formula")
+        if formula:
+            lines.append(f"Formula: {formula}")
+
         documents.append({
             "id": f"metric:{name}",
             "doc_type": "metric",
             "name": name,
-            "content": (
-                f"Metric: {name}\n"
-                f"Description: {definition['description']}\n"
-                f"Unit: {definition['unit']}"
-            ),
+            "content": "\n".join(lines),
         })
+
 
     # 4. Dimension registry documents
     for name, definition in DIMENSION_REGISTRY.items():

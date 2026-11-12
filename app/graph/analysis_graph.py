@@ -9,6 +9,9 @@ from app.agents.sql_error_classifier import (
     SQLErrorType,
     should_retry_sql,
 )
+from app.agents.sql_semantic_validator import (
+    validate_sql_semantics,
+)
 from app.agents.output_contract_validator import (
     validate_output_contract,
 )
@@ -18,7 +21,8 @@ from app.graph.state import AnalysisState
 
 def route_after_sql_validation(state: AnalysisState) -> str:
     if state.get("sql_valid", False):
-        return "execute"
+        return "semantic"
+        #return "execute"
 
     return "stop"
 
@@ -43,6 +47,42 @@ def route_after_sql_execution(state: AnalysisState) -> str:
 
     return "stop"
 
+
+def route_after_semantic_validation(state: AnalysisState) -> str:
+    if not state.get("sql_valid", False):
+        return "stop"
+
+    status = state.get("semantic_status")
+
+    if status == "VALID":
+        return "execute"
+
+    if status == "SKIPPED":
+        metric_plan = state.get("metric_plan")
+
+        if metric_plan is None:
+            return "stop"
+
+        delivery_metrics = {
+            "delivered_orders_with_delivery_date",
+            "delayed_orders",
+            "delay_rate_pct",
+        }
+
+        selected = {
+            metric.name
+            for metric in metric_plan.metrics
+        }
+
+        # Only non-delivery metrics may bypass semantic checks.
+        if not (selected & delivery_metrics):
+            return "execute"
+
+    # INVALID, UNSUPPORTED and unknown statuses
+    # must never reach the SQL Executor.
+    return "stop"
+
+
 def build_analysis_graph():
     builder = StateGraph(AnalysisState)
 
@@ -59,6 +99,10 @@ def build_analysis_graph():
         "recovery_finalizer",
         finalize_recovery,
     )
+    builder.add_node(
+        "sql_semantic_validator",
+        validate_sql_semantics,
+    )
 
     builder.add_edge(START, "metric_planner")
     builder.add_edge("metric_planner", "sql_generator")
@@ -69,17 +113,16 @@ def build_analysis_graph():
         "sql_validator",
         route_after_sql_validation,
         {
-            "execute": "sql_executor",
+            "semantic": "sql_semantic_validator",
             "stop": "recovery_finalizer",
         },
     )
 
     builder.add_conditional_edges(
-        "sql_executor",
-        route_after_sql_execution,
+        "sql_semantic_validator",
+        route_after_semantic_validation,
         {
-            "success": "output_contract_validator",
-            "retry": "sql_repair",
+            "execute": "sql_executor",
             "stop": "recovery_finalizer",
         },
     )

@@ -5,11 +5,26 @@ from app.graph.analysis_graph import (
 from langgraph.graph import END, START, StateGraph
 
 from app.agents.sql_validator import validate_sql
-from app.graph.analysis_graph import route_after_sql_validation, route_after_sql_execution
+from app.graph.analysis_graph import route_after_sql_validation, route_after_sql_execution, route_after_semantic_validation
 from app.graph.state import AnalysisState
 
 
-def test_valid_sql_routes_to_executor():
+def mock_semantic_validator(state: AnalysisState) -> dict:
+    """
+    Test double for semantic validation.
+
+    These legacy tests focus on AST routing,
+    SQL execution, and recovery behavior.
+    Semantic policy correctness is tested separately.
+    """
+
+    return {
+        "semantic_status": "VALID",
+        "semantic_error": None,
+    }
+
+
+def test_valid_sql_routes_to_semantic_validator():
     state = {
         "sql": "SELECT COUNT(*) FROM orders",
         "sql_valid": True,
@@ -17,7 +32,7 @@ def test_valid_sql_routes_to_executor():
 
     route = route_after_sql_validation(state)
 
-    assert route == "execute"
+    assert route == "semantic"
 
 
 def test_invalid_sql_routes_to_end():
@@ -47,6 +62,10 @@ def build_test_graph(executor):
     builder = StateGraph(AnalysisState)
 
     builder.add_node("sql_validator", validate_sql)
+    builder.add_node(
+        "sql_semantic_validator",
+        mock_semantic_validator,
+    )
     builder.add_node("sql_executor", executor)
 
     builder.add_edge(START, "sql_validator")
@@ -54,6 +73,15 @@ def build_test_graph(executor):
     builder.add_conditional_edges(
         "sql_validator",
         route_after_sql_validation,
+        {
+            "semantic": "sql_semantic_validator",
+            "stop": END,
+        },
+    )
+
+    builder.add_conditional_edges(
+        "sql_semantic_validator",
+        route_after_semantic_validation,
         {
             "execute": "sql_executor",
             "stop": END,

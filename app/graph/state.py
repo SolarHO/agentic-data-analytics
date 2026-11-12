@@ -28,3 +28,9 @@ class AnalysisState(TypedDict, total=False):
     recovery_status: NotRequired[str]
 
     context_mode: Literal["full", "registry", "hybrid"]
+
+    semantic_status: str
+    semantic_error: str | None
+
+    analysis_status: str
+    analysis_error: str | None

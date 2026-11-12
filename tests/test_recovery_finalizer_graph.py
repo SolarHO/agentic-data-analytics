@@ -7,15 +7,35 @@ from app.graph.state import AnalysisState
 from app.graph.analysis_graph import (
     route_after_sql_validation,
     route_after_sql_execution,
+    route_after_semantic_validation,
 )
 from app.agents.sql_validator import validate_sql
 from app.agents.recovery_finalizer import finalize_recovery
+
+
+def mock_semantic_validator(state: AnalysisState) -> dict:
+    """
+    Test double for semantic validation.
+
+    These legacy tests focus on AST routing,
+    SQL execution, and recovery behavior.
+    Semantic policy correctness is tested separately.
+    """
+
+    return {
+        "semantic_status": "VALID",
+        "semantic_error": None,
+    }
 
 
 def build_test_graph(executor, repair, contract):
     builder = StateGraph(AnalysisState)
 
     builder.add_node("sql_validator", validate_sql)
+    builder.add_node(
+        "sql_semantic_validator",
+        mock_semantic_validator,
+    )
     builder.add_node("sql_executor", executor)
     builder.add_node("sql_repair", repair)
     builder.add_node("output_contract_validator", contract)
@@ -23,15 +43,27 @@ def build_test_graph(executor, repair, contract):
 
     builder.add_edge(START, "sql_validator")
 
+    # 1. AST validation
     builder.add_conditional_edges(
         "sql_validator",
         route_after_sql_validation,
+        {
+            "semantic": "sql_semantic_validator",
+            "stop": "recovery_finalizer",
+        },
+    )
+
+    # 2. Semantic validation
+    builder.add_conditional_edges(
+        "sql_semantic_validator",
+        route_after_semantic_validation,
         {
             "execute": "sql_executor",
             "stop": "recovery_finalizer",
         },
     )
 
+    # 3. SQL execution result
     builder.add_conditional_edges(
         "sql_executor",
         route_after_sql_execution,
@@ -42,7 +74,10 @@ def build_test_graph(executor, repair, contract):
         },
     )
 
+    # 4. SQL repair must pass both validators again
     builder.add_edge("sql_repair", "sql_validator")
+
+    # 5. Finalization
     builder.add_edge(
         "output_contract_validator",
         "recovery_finalizer",
