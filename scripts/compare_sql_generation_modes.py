@@ -56,10 +56,7 @@ GOLD_PLANS = {
             "delay_rate_pct",
         ],
         "dimensions": [],
-        "filters": [
-            "order_status = 'delivered'",
-            "order_delivered_customer_date IS NOT NULL",
-        ],
+        "filters": [],
     },
     "GQ06": {
         "metrics": [
