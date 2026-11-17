@@ -167,26 +167,49 @@ def is_nullif_rate_arithmetic(node):
 
 
 
+
 def validate_delay_rate_expression(expression):
     """
-    Validate a restricted delivery delay rate expression.
+    Validate restricted delivery delay rate expressions.
 
     Supported:
-    1. ROUND(CASE WHEN denominator = 0
-                  THEN 0
-                  ELSE rate_arithmetic END, 2)
-
-    2. ROUND(
-           100 * numerator
-           / NULLIF(denominator, 0),
-           2
+    1. ROUND(CASE WHEN ... END, 2)
+    2. ROUND(100 * numerator / NULLIF(denominator, 0), 2)
+    3. COALESCE(
+           ROUND(100 * numerator / NULLIF(denominator, 0), 2),
+           0
        )
 
-    Other forms are rejected until supported.
+    Unknown forms are rejected.
     """
 
     node = unwrap(expression)
 
+    # Optional COALESCE wrapper
+    if isinstance(node, exp.Coalesce):
+        fallbacks = node.expressions
+
+        # Accept exactly one fallback, and it must be zero.
+        if len(fallbacks) != 1:
+            return False
+
+        if not is_number(fallbacks[0], 0):
+            return False
+
+        node = unwrap(node.this)
+
+        # COALESCE is only allowed around a NULLIF-based rate.
+        if not isinstance(node, exp.Round):
+            return False
+
+        if not is_number(node.args.get("decimals"), 2):
+            return False
+
+        return is_nullif_rate_arithmetic(
+            unwrap(node.this)
+        )
+
+    # Existing ROUND-based validation
     if not isinstance(node, exp.Round):
         return False
 
@@ -195,11 +218,9 @@ def validate_delay_rate_expression(expression):
 
     inner = unwrap(node.this)
 
-    # Existing CASE WHEN pattern
     if is_safe_case_rate(inner):
         return True
 
-    # New NULLIF pattern
     if is_nullif_rate_arithmetic(inner):
         return True
 

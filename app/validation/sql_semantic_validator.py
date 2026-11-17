@@ -2,13 +2,14 @@
 import sqlglot
 from sqlglot import exp
 
-from app.graph.metric_plan import MetricPlan
+from app.graph.metric_plan import MetricPlan, MetricDefinition
 from app.validation.metric_policy import (
     resolve_metric_policies,
 )
 from app.validation.delay_rate_expression import (
     validate_delay_rate_expression,
 )
+from app.context.metric_registry import METRIC_REGISTRY
 
 SUPPORTED_METRICS = {
     "delivered_orders_with_delivery_date",
@@ -272,6 +273,172 @@ GQ05_METRICS = {
 GQ05_COUNT_METRICS = GQ05_METRICS - {"delay_rate_pct"}
 
 
+
+def resolve_gq05_count_source(with_clause):
+    """
+    Resolve supported GQ05 CTE structures.
+
+    1 CTE:
+        counts -> orders
+
+    2 CTEs:
+        delivered -> orders
+        counts -> delivered
+
+    The second form is normalized to a SELECT
+    directly aggregating orders, so the existing
+    population validator can be reused.
+    """
+
+    if with_clause is None:
+        raise ValueError("One or two CTEs are required.")
+
+    if with_clause.args.get("recursive"):
+        raise ValueError("Recursive CTEs are not supported.")
+
+    ctes = with_clause.expressions
+
+    if len(ctes) == 1:
+        count_cte = ctes[0]
+
+        if not isinstance(count_cte.this, exp.Select):
+            raise ValueError("COUNT CTE must contain a SELECT.")
+
+        return (
+            count_cte.alias_or_name.lower(),
+            count_cte.this,
+            count_cte.this,
+        )
+
+    if len(ctes) != 2:
+        raise ValueError("Only one or two CTEs are supported.")
+
+    population_cte, count_cte = ctes
+
+    population_name = population_cte.alias_or_name.lower()
+    count_name = count_cte.alias_or_name.lower()
+
+    if not population_name or not count_name:
+        raise ValueError("CTE names are required.")
+
+    if population_name == count_name:
+        raise ValueError("Duplicate CTE names.")
+
+    population = population_cte.this
+    counts = count_cte.this
+
+    if not (
+        isinstance(population, exp.Select)
+        and isinstance(counts, exp.Select)
+    ):
+        raise ValueError("Both CTEs must contain SELECT.")
+
+    # Population CTE must be a simple projection
+    # with a WHERE clause. Reject other operations.
+    allowed_population_args = {
+        "expressions",
+        "from_",
+        "where",
+    }
+
+    for key, value in population.args.items():
+        if key not in allowed_population_args and value:
+            raise ValueError(
+                f"Unsupported population CTE clause: {key}"
+            )
+
+    required_columns = {
+        "order_id",
+        "order_delivered_customer_date",
+        "order_estimated_delivery_date",
+    }
+
+    columns = population.expressions
+
+    if (
+        len(columns) != len(required_columns)
+        or not all(isinstance(c, exp.Column) for c in columns)
+        or any(c.table for c in columns)
+        or {c.name.lower() for c in columns} != required_columns
+    ):
+        raise ValueError(
+            "Population CTE must project the three "
+            "required order columns directly."
+        )
+
+    population_from = population.args.get("from_")
+
+    if population_from is None:
+        raise ValueError("Population CTE missing FROM.")
+
+    base_table = population_from.this
+
+    if (
+        not isinstance(base_table, exp.Table)
+        or base_table.name.lower() != "orders"
+        or base_table.args.get("alias")
+        or base_table.args.get("db")
+        or base_table.args.get("catalog")
+    ):
+        raise ValueError(
+            "Population CTE must read directly from orders."
+        )
+
+    population_where = population.args.get("where")
+
+    if population_where is None:
+        raise ValueError(
+            "Population CTE must define population conditions."
+        )
+
+    counts_from = counts.args.get("from_")
+
+    if counts_from is None:
+        raise ValueError("COUNT CTE missing FROM.")
+
+    counts_table = counts_from.this
+
+    if (
+        not isinstance(counts_table, exp.Table)
+        or counts_table.name.lower() != population_name
+        or counts_table.args.get("alias")
+    ):
+        raise ValueError(
+            "COUNT CTE must read directly from population CTE."
+        )
+
+    # Prevent stale CTE qualifiers after normalization.
+    if any(c.table for c in counts.find_all(exp.Column)):
+        raise ValueError(
+            "Qualified COUNT CTE columns are not supported."
+        )
+
+    # Build a copy, never mutate the original query.
+    normalized = counts.copy()
+
+    normalized.set(
+        "from_",
+        population_from.copy(),
+    )
+
+    counts_where = counts.args.get("where")
+
+    if counts_where is None:
+        combined_where = population_where.copy()
+    else:
+        combined_where = exp.Where(
+            this=exp.and_(
+                population_where.this.copy(),
+                counts_where.this.copy(),
+            )
+        )
+
+    normalized.set("where", combined_where)
+
+    return count_name, counts, normalized
+
+
+
 def validate_gq05_cte(sql, metric_plan):
     """
     Validate a restricted GQ05 CTE structure:
@@ -287,18 +454,18 @@ def validate_gq05_cte(sql, metric_plan):
 
     with_clause = tree.args.get("with_")
 
-    if with_clause is None or len(with_clause.expressions) != 1:
-        raise ValueError("Exactly one CTE is required.")
+    cte_name, source, count_source = (
+        resolve_gq05_count_source(with_clause)
+    )
 
-    if len(list(tree.find_all(exp.Select))) != 2:
-        raise ValueError("Nested queries are not supported.")
+    expected_selects = (
+        len(with_clause.expressions) + 1
+    )
 
-    cte = with_clause.expressions[0]
-    cte_name = cte.alias_or_name.lower()
-    source = cte.this
-
-    if not isinstance(source, exp.Select):
-        raise ValueError("CTE must contain a SELECT.")
+    if len(list(tree.find_all(exp.Select))) != expected_selects:
+        raise ValueError(
+            "Nested queries are not supported."
+        )
 
     outer_from = tree.args.get("from_")
 
@@ -340,26 +507,29 @@ def validate_gq05_cte(sql, metric_plan):
             "CTE must produce exactly the two count metrics."
         )
 
-    # Reuse the existing COUNT semantic validator.
-    count_plan = metric_plan.model_copy(
-        update={
-            "metrics": [
-                metric
-                for metric in metric_plan.metrics
-                if metric.name in GQ05_COUNT_METRICS
-            ]
-        }
+    
+    # Always validate both canonical count metrics,
+    # regardless of which final outputs were requested.
+    count_plan = MetricPlan(
+        intent="aggregation",
+        metrics=[
+            MetricDefinition(
+                name=name,
+                description=METRIC_REGISTRY[name]["description"],
+            )
+            for name in sorted(GQ05_COUNT_METRICS)
+        ],
+        filters=[],
+        dimensions=[],
     )
 
     count_result = validate_metric_semantics(
-        source.sql(dialect="postgres"),
+        count_source.sql(dialect="postgres"),
         count_plan,
     )
 
     if not count_result["semantic_valid"]:
-        raise ValueError(
-            count_result["semantic_error"]
-        )
+        raise ValueError(count_result["semantic_error"])
 
     # Validate the outer projection and rate expression.
     
@@ -390,12 +560,17 @@ def validate_gq05_cte(sql, metric_plan):
         projections[name] = expression
 
 
-    if set(projections) != GQ05_METRICS:
+    requested_metrics = {
+        metric.name
+        for metric in metric_plan.metrics
+    }
+
+    if set(projections) != requested_metrics:
         raise ValueError(
-            "Outer output columns do not match GQ05 metrics."
+            "Outer output columns do not match requested metrics."
         )
 
-    for name in GQ05_COUNT_METRICS:
+    for name in GQ05_COUNT_METRICS & requested_metrics:
         node = projections[name]
 
         if not isinstance(node, exp.Column):
@@ -493,8 +668,11 @@ def validate_metric_semantics(
 
     selected = set(policies)
 
+    
     if "delay_rate_pct" in selected:
-        if selected != GQ05_METRICS:
+        # Rate validation supports a subset of the
+        # canonical delivery metrics as final outputs.
+        if not selected <= GQ05_METRICS:
             return {
                 "semantic_valid": False,
                 "semantic_error": (
@@ -510,7 +688,8 @@ def validate_metric_semantics(
             return {
                 "semantic_valid": False,
                 "semantic_error": str(exc),
-            }    
+            }
+
 
     if not selected <= SUPPORTED_METRICS:
         return {

@@ -9,6 +9,10 @@ from app.context.database_context import (
 from app.graph.metric_plan import MetricPlan
 from app.graph.state import AnalysisState
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 llm = ChatOpenAI(
@@ -62,6 +66,42 @@ PLANNING RULES
 - Use the exact canonical dimension name.
 - Do not invent new dimension names.
 - Do not include grouping dimensions in metrics.
+
+METRIC SELECTION RULES
+----------------------
+- Identify every explicitly requested output metric.
+- Do not replace a requested metric with a related metric.
+- If the user asks for delayed or late deliveries, select delayed_orders.
+- If the user asks for the delivery delay rate or percentage,
+  select delay_rate_pct.
+- Do not substitute delivered_orders for delayed_orders.
+- For count, rate, average, and sum questions, use aggregation
+  unless a more specific comparison or trend intent applies.
+- Required population conditions already defined in the
+  METRIC REGISTRY are part of the metric definition.
+- Do not repeat those required population conditions in filters.
+- filters must contain only additional restrictions explicitly
+  requested by the user, such as a date range or category.
+- Do not include intermediate metrics solely to compute
+  another metric unless they are explicitly requested outputs.
+
+EXAMPLES
+--------
+Question: How many delivered orders were delayed?
+Metrics: [delayed_orders]
+Intent: aggregation
+Filters: []
+
+Question: What are the delayed order count and delivery delay rate?
+Metrics: [delayed_orders, delay_rate_pct]
+Intent: aggregation
+Filters: []
+
+Question: What is the delivery delay rate for orders purchased in 2018?
+Metrics: [delay_rate_pct]
+Intent: aggregation
+Filters: [order purchase date in 2018]
+``
 """
 
 
@@ -93,6 +133,11 @@ def plan_metrics(state: AnalysisState) -> AnalysisState:
     question = state.get("question", "")
 
     plan = create_metric_plan(question)
+
+    logger.info(
+        "Metric Plan: %s",
+        plan.model_dump_json(),
+    )
 
     return {
         "metric_plan": plan,

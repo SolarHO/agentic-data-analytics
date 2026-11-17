@@ -206,3 +206,92 @@ def test_invalid_nullif_rate_formula(formula):
 
     assert validate_delay_rate_expression(expression) is False
 
+
+@pytest.mark.parametrize(
+    "formula",
+    [
+        """
+        COALESCE(
+            ROUND(
+                100.0 * delayed_orders::numeric
+                / NULLIF(delivered_orders_with_delivery_date, 0),
+                2
+            ),
+            0.00
+        )
+        """,
+        """
+        COALESCE(
+            ROUND(
+                100 * delayed_orders
+                / NULLIF(delivered_orders_with_delivery_date, 0)::numeric,
+                2
+            ),
+            0
+        )
+        """,
+    ],
+)
+def test_valid_coalesce_rate_formula(formula):
+    expression = extract_expression(make_sql(formula))
+
+    assert validate_delay_rate_expression(expression) is True
+
+
+@pytest.mark.parametrize(
+    "formula",
+    [
+        # Incorrect fallback
+        """
+        COALESCE(
+            ROUND(
+                100 * delayed_orders
+                / NULLIF(delivered_orders_with_delivery_date, 0),
+                2
+            ),
+            100
+        )
+        """,
+
+        # Numerator and denominator reversed
+        """
+        COALESCE(
+            ROUND(
+                100 * delivered_orders_with_delivery_date
+                / NULLIF(delayed_orders, 0),
+                2
+            ),
+            0
+        )
+        """,
+
+        # Missing NULLIF protection
+        """
+        COALESCE(
+            ROUND(
+                100 * delayed_orders
+                / delivered_orders_with_delivery_date,
+                2
+            ),
+            0
+        )
+        """,
+
+        # Additional fallback
+        """
+        COALESCE(
+            ROUND(
+                100 * delayed_orders
+                / NULLIF(delivered_orders_with_delivery_date, 0),
+                2
+            ),
+            0,
+            1
+        )
+        """,
+    ],
+)
+def test_invalid_coalesce_rate_formula(formula):
+    expression = extract_expression(make_sql(formula))
+
+    assert validate_delay_rate_expression(expression) is False
